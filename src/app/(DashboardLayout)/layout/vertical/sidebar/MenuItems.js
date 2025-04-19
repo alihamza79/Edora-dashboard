@@ -4,39 +4,20 @@ import {
   IconBook,
   IconUserCircle,
   IconLayoutDashboard,
-  IconBookmark,
   IconNotebook,
   IconPoint,
 } from '@tabler/icons-react';
 
 // Dynamic menu items based on user role
 const getMenuItems = (role) => {
-  const baseItems = [
-    {
-      navlabel: true,
-      subheader: 'Home',
-    },
-    {
-      id: uniqueId(),
-      title: 'Dashboard',
-      icon: IconLayoutDashboard,
-      href: '/dashboard',
-    },
-    {
-      id: uniqueId(),
-      title: 'Profile',
-      icon: IconUserCircle,
-      href: '/profile',
-    },
-  ];
-
   // Student-specific menu items
   if (role === 'student') {
     return [
-      ...baseItems,
       {
-        navlabel: true,
-        subheader: 'Courses',
+        id: uniqueId(),
+        title: 'Dashboard',
+        icon: IconLayoutDashboard,
+        href: '/student/dashboard',
       },
       {
         id: uniqueId(),
@@ -49,22 +30,17 @@ const getMenuItems = (role) => {
         title: 'My Enrolled Courses',
         icon: IconBook,
         href: '/student/enrolled',
-      },
-      {
-        id: uniqueId(),
-        title: 'Wishlist',
-        icon: IconBookmark,
-        href: '/student/wishlist',
-      },
+      }
     ];
   }
   
   // Tutor-specific menu items - keep the original structure
   return [
-    ...baseItems,
     {
-      navlabel: true,
-      subheader: 'Apps',
+      id: uniqueId(),
+      title: 'Dashboard',
+      icon: IconLayoutDashboard,
+      href: '/teacher/dashboard',
     },
     {
       id: uniqueId(),
