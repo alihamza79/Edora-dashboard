@@ -33,14 +33,24 @@ const TeacherDashboard = () => {
   useEffect(() => {
     const fetchTeacherAnalytics = async () => {
       try {
+        // Add a check for localStorage user type as a fallback
+        const localUserType = localStorage.getItem('userType');
+        
         if (!user) {
           setError("You need to be logged in to view this dashboard");
           setLoading(false);
           return;
         }
         
-        // Check specifically for tutor role
-        if (user.role !== 'tutor') {
+        // Check for teacher role in multiple ways to be safe
+        const isTeacher = 
+          user.role === 'tutor' || 
+          user.role === 'teacher' || 
+          localUserType === 'tutor' || 
+          localUserType === 'teacher';
+          
+        if (!isTeacher) {
+          console.log("User role check failed:", { userRole: user.role, localUserType });
           setError("You need to be logged in as a teacher to view this dashboard");
           setLoading(false);
           return;
