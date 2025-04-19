@@ -14,4 +14,110 @@ body.course-view-mode {
   width: 100% !important;
   margin-left: 0 !important;
   transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+/* Additional sidebar styles */
+.course-view-mode .MuiDrawer-root,
+.course-view-mode .sidebar,
+.course-view-mode aside,
+.course-view-mode [class*="sidebar"],
+.course-view-mode [class*="Sidebar"],
+.course-view-mode [class*="drawer"],
+.course-view-mode [class*="Drawer"] {
+  transform: translateX(-100%) !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.course-view-mode main,
+.course-view-mode .mainContent,
+.course-view-mode .main-content,
+.course-view-mode [class*="mainContent"],
+.course-view-mode [class*="MainContent"] {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.course-view-mode .MuiContainer-root,
+.course-view-mode .full-width-container {
+  max-width: 100% !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+.course-view-mode .course-learn-container {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  max-width: none !important;
+}
+
+/* Course content specific styles */
+.lesson-checkbox {
+  color: #4caf50 !important;
+}
+
+.lesson-checkbox .MuiSvgIcon-root {
+  color: #4caf50 !important;
+}
+
+.lesson-completed {
+  text-decoration: line-through;
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.lesson-item {
+  border-left: 3px solid transparent;
+  transition: border-left-color 0.2s ease;
+}
+
+.lesson-item.completed {
+  border-left-color: #4caf50 !important;
+}
+
+.course-progress-bar .MuiLinearProgress-bar {
+  background-color: #4caf50 !important;
+  border-radius: 5px;
+}
+
+.course-sidebar-toggle {
+  position: fixed !important;
+  top: 80px !important;
+  left: 10px !important;
+  z-index: 1000 !important;
+  background-color: white !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix for MUI Drawer */
+@media (min-width: 0px) {
+  .course-view-mode .MuiDrawer-root {
+    width: 0 !important;
+  }
+  
+  .course-view-mode .MuiDrawer-docked {
+    width: 0 !important;
+  }
+  
+  .course-view-mode .MuiDrawer-paper {
+    width: 0 !important;
+  }
+}
+
+/* Make course content page full width */
+.full-width-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+/* Position the sidebar toggle button */
+.course-view-mode .course-sidebar-toggle {
+  display: block !important;
+  position: fixed !important;
+  z-index: 1200 !important;
 } 
