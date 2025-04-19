@@ -140,7 +140,7 @@ const Menuitems = [
             id: uniqueId(),
             title: 'Profile',
             icon: IconPoint,
-            href: '/apps/user-profile/profile',
+            href: '',
           },
           {
             id: uniqueId(),

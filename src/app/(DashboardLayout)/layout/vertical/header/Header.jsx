@@ -1,4 +1,3 @@
-
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
@@ -12,13 +11,7 @@ import {
   toggleMobileSidebar, setDarkMode,
 } from "../../../../../store/customizer/CustomizerSlice";
 import { IconMenu2, IconMoon, IconSun } from "@tabler/icons-react";
-import Notifications from "./Notification";
 import Profile from "./Profile";
-import Search from "./Search";
-import Language from "./Language";
-import Navigation from "./Navigation";
-import MobileRightSidebar from "./MobileRightSidebar";
-import Cart from './Cart';
 
 const Header = () => {
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up("lg"));
@@ -60,27 +53,11 @@ const Header = () => {
           <IconMenu2 size="20" />
         </IconButton>
 
-        {/* ------------------------------------------- */}
-        {/* Search Dropdown */}
-        {/* ------------------------------------------- */}
-        <Search />
-        {lgUp ? (
-          <>
-            <Navigation />
-          </>
-        ) : null}
-
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
-          <Language />
           {/* ------------------------------------------- */}
-          {/* Ecommerce Dropdown */}
+          {/* Dark Mode Icon */}
           {/* ------------------------------------------- */}
-          <Cart />
-          {/* ------------------------------------------- */}
-          {/* End Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
-
           <IconButton size="large" color="inherit">
             {customizer.activeMode === 'light' ? (
               <IconMoon size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('dark'))} />
@@ -89,11 +66,9 @@ const Header = () => {
             )}
           </IconButton>
 
-          <Notifications />
           {/* ------------------------------------------- */}
-          {/* Toggle Right Sidebar for mobile */}
+          {/* Profile Icon */}
           {/* ------------------------------------------- */}
-          {lgDown ? <MobileRightSidebar /> : null}
           <Profile />
         </Stack>
       </ToolbarStyled>
