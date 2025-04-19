@@ -1,7 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { account } from '@/appwrite/config';
+import { account, databases, databaseId } from '@/appwrite/config';
+import { Client, Databases, Query } from 'appwrite';
+import { collections } from '@/appwrite/collections';
+import { projectID } from '@/appwrite/config';
 
 // Create the auth context
 const AuthContext = createContext();
@@ -16,34 +19,100 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in on mount
+  // Check if user is already logged in
   useEffect(() => {
-    const checkUser = async () => {
+    const checkUserStatus = async () => {
       try {
-        setLoading(true);
-        const currentUser = await account.get();
-        setUser(currentUser);
+        const loggedInUser = await account.get();
+        
+        // Get user document for additional data (including role)
+        try {
+          // Query the users collection to find the user document
+          const usersResponse = await databases.listDocuments(
+            databaseId,
+            collections.users,
+            [Query.equal('userId', loggedInUser.$id)]
+          );
+          
+          if (usersResponse.documents.length > 0) {
+            const userData = usersResponse.documents[0];
+            
+            // Add role to user object - use role or userType field from database
+            setUser({
+              ...loggedInUser,
+              role: userData.role || userData.userType || 'student' // Try both fields with fallback
+            });
+          } else {
+            // If user document not found, use default role
+            setUser({
+              ...loggedInUser,
+              role: 'student' // Default role
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+          // If error fetching user doc, just use account info with default role
+          setUser({
+            ...loggedInUser,
+            role: 'student' // Default role
+          });
+        }
       } catch (error) {
-        console.error('Error checking authentication:', error);
         setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
-    checkUser();
+    checkUserStatus();
   }, []);
 
-  // Login function
+  // Login function with similar modifications to detect role correctly
   const login = async (email, password) => {
     try {
       const session = await account.createEmailSession(email, password);
-      const currentUser = await account.get();
-      setUser(currentUser);
-      return { success: true, user: currentUser };
+      const loggedInUser = await account.get();
+      
+      // Get user document for additional data (including role)
+      try {
+        // Query the users collection to find the user document
+        const usersResponse = await databases.listDocuments(
+          databaseId,
+          collections.users,
+          [Query.equal('userId', loggedInUser.$id)]
+        );
+        
+        if (usersResponse.documents.length > 0) {
+          const userData = usersResponse.documents[0];
+          
+          // Add role to user object
+          setUser({
+            ...loggedInUser,
+            role: userData.role || userData.userType || 'student' // Try both fields with fallback
+          });
+        } else {
+          // If user document not found, use default role
+          setUser({
+            ...loggedInUser,
+            role: 'student' // Default role
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        // If error fetching user doc, just use account info with default role
+        setUser({
+          ...loggedInUser,
+          role: 'student' // Default role
+        });
+      }
+      
+      return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: error.message };
+      return { 
+        success: false, 
+        error: error.message 
+      };
     }
   };
 

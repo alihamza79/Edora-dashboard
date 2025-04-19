@@ -40,7 +40,7 @@ export const signIn = async (email, password) => {
     const session = await account.createEmailPasswordSession(email, password);
     localStorage.setItem("authToken", session.$id); // Store the session ID
     
-    // Get user profile from database
+    // Get user profile from account
     const user = await account.get();
     
     // Find the user's profile with additional data
@@ -52,7 +52,10 @@ export const signIn = async (email, password) => {
     
     if (profiles.documents.length > 0) {
       const userProfile = profiles.documents[0];
-      localStorage.setItem("userType", userProfile.userType);
+      
+      // Store the user role in localStorage for easier access
+      // This is just for convenience - actual authentication should still check the database
+      localStorage.setItem("userRole", userProfile.role || userProfile.userType || 'student');
     }
     
     return session;
