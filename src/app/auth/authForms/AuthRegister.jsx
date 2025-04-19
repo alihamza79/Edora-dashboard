@@ -68,7 +68,7 @@ const AuthRegister = ({ title, subtitle, subtext }) => {
 
     try {
       // Register the user with Appwrite
-      const user = await registerUser(name, email, password);
+      const user = await registerUser(name, email, password, userType);
       
       // Store user type in localStorage
       localStorage.setItem('userType', userType);
