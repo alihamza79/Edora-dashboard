@@ -3,12 +3,19 @@ import { uniqueId } from 'lodash';
 import {
   IconPoint,
   IconSchool,
+  IconChartBar,
 } from '@tabler/icons-react';
 
 const Menuitems = [
   {
     navlabel: true,
     subheader: 'Apps',
+  },
+  {
+    id: uniqueId(),
+    title: 'Teacher Dashboard',
+    icon: IconChartBar,
+    href: '/teacher/dashboard',
   },
   {
     id: uniqueId(),

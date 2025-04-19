@@ -17,6 +17,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
+import PeopleIcon from '@mui/icons-material/People';
 import Link from 'next/link';
 
 const CourseCard = ({ course }) => {
@@ -35,6 +36,9 @@ const CourseCard = ({ course }) => {
     day: 'numeric',
   });
 
+  // Get enrollment count
+  const enrollmentCount = course.enrollmentCount || 0;
+
   return (
     <Card 
       sx={{ 
@@ -42,6 +46,8 @@ const CourseCard = ({ course }) => {
         display: 'flex', 
         flexDirection: 'column',
         transition: 'all 0.3s',
+        borderRadius: 2,
+        overflow: 'hidden',
         '&:hover': {
           transform: 'translateY(-5px)',
           boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
@@ -103,6 +109,13 @@ const CourseCard = ({ course }) => {
         </Box>
       </CardContent>
       <Divider />
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+        <PeopleIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+        <Typography variant="body2" color="text.secondary">
+          {enrollmentCount} {enrollmentCount === 1 ? 'Student Enrolled' : 'Students Enrolled'}
+        </Typography>
+      </Box>
+      <Divider />
       <CardActions sx={{ justifyContent: 'space-between', padding: '8px 16px' }}>
         <Chip 
           label={course.status || 'Draft'} 
@@ -135,11 +148,11 @@ const CourseCard = ({ course }) => {
       <Box px={2} py={1}>
         <Link href={`/courses/content/${course.$id}`} passHref>
           <Button 
-            variant="outlined" 
+            variant="contained" 
             size="small" 
             fullWidth
             startIcon={<VideoLibraryIcon />}
-            sx={{ mb: 1 }}
+            color="primary"
           >
             Manage Content
           </Button>

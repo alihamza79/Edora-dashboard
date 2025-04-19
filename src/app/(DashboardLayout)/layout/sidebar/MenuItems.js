@@ -6,6 +6,7 @@ import {
   IconNotebook,
   IconBookmark,
   IconStar,
+  IconChartBar,
 } from '@tabler/icons-react';
 
 const MenuItems = (userRole) => {
@@ -29,12 +30,18 @@ const MenuItems = (userRole) => {
   const tutorItems = [
     {
       id: 3,
+      title: 'Teacher Dashboard',
+      icon: IconChartBar,
+      href: '/teacher/dashboard',
+    },
+    {
+      id: 4,
       title: 'My Courses',
       icon: IconBook,
       href: '/courses',
     },
     {
-      id: 4,
+      id: 5,
       title: 'Create Course',
       icon: IconNotebook,
       href: '/courses/create',

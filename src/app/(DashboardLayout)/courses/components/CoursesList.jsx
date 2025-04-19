@@ -36,7 +36,33 @@ const CoursesList = () => {
           [Query.equal('tutorId', user.$id)]
         );
 
-        setCourses(response.documents);
+        const coursesData = response.documents;
+        
+        // Fetch enrollment counts for each course
+        const coursesWithEnrollments = await Promise.all(
+          coursesData.map(async (course) => {
+            try {
+              const enrollments = await databases.listDocuments(
+                databaseId,
+                collections.enrollments,
+                [Query.equal('courseId', course.$id)]
+              );
+              
+              return {
+                ...course,
+                enrollmentCount: enrollments.documents.length
+              };
+            } catch (err) {
+              console.error(`Error fetching enrollments for course ${course.$id}:`, err);
+              return {
+                ...course,
+                enrollmentCount: 0
+              };
+            }
+          })
+        );
+
+        setCourses(coursesWithEnrollments);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching courses:', error);
