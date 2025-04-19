@@ -268,31 +268,39 @@ const StudentDashboard = () => {
                               <LinearProgress variant="determinate" value={course.progress} sx={{ height: 6, borderRadius: 3 }} />
                             </Box>
                           }
-                          sx={{ ml: 1 }}
+                          sx={{ ml: 1, flex: 1 }}
                         />
-                        <Link href={`/student/courses/content/${course.$id}`} passHref>
-                          <Button 
-                            variant="contained" 
-                            color="primary" 
-                            size="small"
-                            sx={{ ml: 2 }}
-                          >
-                            Continue
-                          </Button>
-                        </Link>
+                        <Box sx={{ ml: 2 }}>
+                          <Link href={`/student/courses/${course.$id}`} passHref>
+                            <Button 
+                              variant="contained" 
+                              color="primary" 
+                              size="small"
+                              sx={{ minWidth: '100px' }}
+                            >
+                              Continue
+                            </Button>
+                          </Link>
+                        </Box>
                       </ListItem>
                     ))}
                   </List>
                   
-                  {enrolledCourses.length > 3 && (
-                    <Box sx={{ textAlign: 'center', mt: 2 }}>
-                      <Link href="/student/enrolled" passHref>
-                        <Button variant="outlined">
-                          View All Enrolled Courses
-                        </Button>
-                      </Link>
-                    </Box>
-                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                    <Link href="/student/enrolled" passHref>
+                      <Button variant="outlined">
+                        View All Enrolled Courses
+                      </Button>
+                    </Link>
+                    <Link href="/student/courses" passHref>
+                      <Button 
+                        variant="contained" 
+                        color="success"
+                      >
+                        Enroll in New Course
+                      </Button>
+                    </Link>
+                  </Box>
                 </>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 4 }}>

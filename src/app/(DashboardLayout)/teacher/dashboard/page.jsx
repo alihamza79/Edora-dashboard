@@ -33,7 +33,14 @@ const TeacherDashboard = () => {
   useEffect(() => {
     const fetchTeacherAnalytics = async () => {
       try {
-        if (!user || !user.$id) {
+        if (!user) {
+          setError("You need to be logged in to view this dashboard");
+          setLoading(false);
+          return;
+        }
+        
+        // Check specifically for tutor role
+        if (user.role !== 'tutor') {
           setError("You need to be logged in as a teacher to view this dashboard");
           setLoading(false);
           return;

@@ -37,10 +37,20 @@ export const AuthProvider = ({ children }) => {
           if (usersResponse.documents.length > 0) {
             const userData = usersResponse.documents[0];
             
-            // Add role to user object - use role or userType field from database
+            // Get role from userType field only
+            let userRole = 'student'; // Default role
+            
+            if (userData.userType) {
+              userRole = userData.userType.toLowerCase();
+              
+              // Normalize role names for consistency
+              if (userRole === 'teacher') userRole = 'tutor';
+            }
+            
+            // Add role to user object
             setUser({
               ...loggedInUser,
-              role: userData.role || userData.userType || 'student' // Try both fields with fallback
+              role: userRole
             });
           } else {
             // If user document not found, use default role
@@ -85,17 +95,41 @@ export const AuthProvider = ({ children }) => {
         if (usersResponse.documents.length > 0) {
           const userData = usersResponse.documents[0];
           
+          // Get role from userType field only
+          let userRole = 'student'; // Default role
+          
+          if (userData.userType) {
+            userRole = userData.userType.toLowerCase();
+            
+            // Normalize role names for consistency
+            if (userRole === 'teacher') userRole = 'tutor';
+          }
+          
           // Add role to user object
-          setUser({
+          const userWithRole = {
             ...loggedInUser,
-            role: userData.role || userData.userType || 'student' // Try both fields with fallback
-          });
+            role: userRole
+          };
+          
+          setUser(userWithRole);
+          
+          // Force redirect to the appropriate dashboard based on role
+          if (userRole === 'student') {
+            window.location.href = '/student/dashboard';
+          } else if (userRole === 'tutor') {
+            window.location.href = '/teacher/dashboard';
+          } else {
+            window.location.href = '/dashboard';
+          }
         } else {
           // If user document not found, use default role
           setUser({
             ...loggedInUser,
             role: 'student' // Default role
           });
+          
+          // Redirect to student dashboard as fallback
+          window.location.href = '/student/dashboard';
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -104,6 +138,9 @@ export const AuthProvider = ({ children }) => {
           ...loggedInUser,
           role: 'student' // Default role
         });
+        
+        // Redirect to student dashboard as fallback
+        window.location.href = '/student/dashboard';
       }
       
       return { success: true };
@@ -117,7 +154,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Signup function
-  const signup = async (email, password, name) => {
+  const signup = async (email, password, name, role = 'student') => {
     try {
       // Create user account
       const newUser = await account.create('unique()', email, password, name);
@@ -127,7 +164,52 @@ export const AuthProvider = ({ children }) => {
       
       // Get the full user object
       const currentUser = await account.get();
-      setUser(currentUser);
+      
+      // Normalize role
+      let userRole = role.toLowerCase();
+      if (userRole === 'teacher') userRole = 'tutor';
+      
+      try {
+        // Create a user document in the database with the role
+        await databases.createDocument(
+          databaseId,
+          collections.users,
+          'unique()',
+          {
+            userId: currentUser.$id,
+            name: name,
+            email: email,
+            userType: userRole
+          }
+        );
+        
+        // Set user in context with role
+        const userWithRole = {
+          ...currentUser,
+          role: userRole
+        };
+        
+        setUser(userWithRole);
+        
+        // Redirect to appropriate dashboard based on role
+        if (userRole === 'student') {
+          window.location.href = '/student/dashboard';
+        } else if (userRole === 'tutor') {
+          window.location.href = '/teacher/dashboard';
+        } else {
+          window.location.href = '/dashboard';
+        }
+      } catch (err) {
+        console.error('Error creating user document:', err);
+        // If error creating user document, just use default role
+        setUser({
+          ...currentUser,
+          role: 'student'
+        });
+        
+        // Redirect to student dashboard as fallback
+        window.location.href = '/student/dashboard';
+      }
       
       return { success: true, user: currentUser };
     } catch (error) {
@@ -141,6 +223,10 @@ export const AuthProvider = ({ children }) => {
     try {
       await account.deleteSession('current');
       setUser(null);
+      
+      // Force a complete page refresh to clear any cached UI state
+      window.location.href = '/auth/login';
+      
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);

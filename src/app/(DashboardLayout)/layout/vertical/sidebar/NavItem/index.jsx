@@ -28,7 +28,7 @@ export default function NavItem({ item, level, pathDirect, hideMenu, onClick }) 
 
   const ListItemStyled = styled(ListItemButton)(() => ({
     whiteSpace: 'nowrap',
-    marginBottom: '16px',
+    marginBottom: '8px',
     padding: '8px 10px',
     borderRadius: `${customizer.borderRadius}px`,
     backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
@@ -51,16 +51,33 @@ export default function NavItem({ item, level, pathDirect, hideMenu, onClick }) 
     },
   }));
 
+  // Handle click with hard navigation
+  const handleNavigation = (e) => {
+    // First call the original onClick handler
+    if (lgDown && onClick) {
+      onClick();
+    }
+    
+    // For dashboard-related links, use hard navigation to clear cache
+    const dashboardPaths = ['/dashboard', '/student/dashboard', '/teacher/dashboard'];
+    
+    if (dashboardPaths.includes(item.href)) {
+      e.preventDefault();
+      window.location.href = item.href;
+    }
+  };
+
   const listItemProps = {
     component: item?.external ? 'a' : Link,
     to: item?.href,
     href: item?.external ? item?.href : '',
     target: item?.external ? '_blank' : '',
+    onClick: handleNavigation
   };
 
   return (
     <List component="li" disablePadding key={item?.id && item.title}>
-      <Link href={item.href}>
+      <Link href={item.href} onClick={handleNavigation}>
         <ListItemStyled
           disabled={item?.disabled}
           selected={pathDirect === item?.href}

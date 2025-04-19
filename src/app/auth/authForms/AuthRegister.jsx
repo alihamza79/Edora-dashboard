@@ -68,20 +68,16 @@ const AuthRegister = ({ title, subtitle, subtext }) => {
 
     try {
       // Register the user with Appwrite
-      const user = await registerUser(name, email, password, userType);
+      const { user, userType: normalizedUserType } = await registerUser(name, email, password, userType);
       
       // Store user type in localStorage
-      localStorage.setItem('userType', userType);
+      localStorage.setItem('userType', normalizedUserType);
       
       // Automatically login after registration
       await signIn(email, password);
       
-      // Redirect based on user type
-      if (userType === 'tutor') {
-        router.push('/dashboard/tutor');
-      } else {
-        router.push('/dashboard/student');
-      }
+      // Note: The redirect is now handled by the signIn function in authServices.js
+      // No need for manual redirect here
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.message || 'Failed to register. Please try again.');

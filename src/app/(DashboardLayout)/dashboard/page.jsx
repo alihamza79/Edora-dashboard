@@ -9,40 +9,42 @@ const Dashboard = () => {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      // Redirect based on user role
-      if (user.role === 'student') {
-        router.push('/student/courses');
-      } else if (user.role === 'tutor') {
-        router.push('/courses');
+    // Handle redirection after auth is loaded
+    if (!loading) {
+      if (!user) {
+        // If not logged in, hard redirect to login page
+        window.location.href = '/auth/login';
+        return;
       }
-      // For other roles, stay on dashboard
+
+      // Check for the current URL to avoid infinite redirect loops
+      const currentPath = window.location.pathname;
+      if (currentPath === '/dashboard') {
+        // Hard redirect based on role to ensure a clean state
+        if (user.role === 'student') {
+          window.location.href = '/student/dashboard';
+        } else if (user.role === 'tutor') {
+          window.location.href = '/teacher/dashboard';
+        } else {
+          // For other roles or if role is undefined, use default dashboard
+          window.location.href = '/courses';
+        }
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
 
-  if (loading || !user) {
-    return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        minHeight="100vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // This will rarely be shown as the useEffect will redirect
   return (
     <Box 
       display="flex" 
       justifyContent="center" 
       alignItems="center" 
-      minHeight="100vh"
+      flexDirection="column"
+      minHeight="80vh"
     >
-      <CircularProgress />
-      <span style={{ marginLeft: '10px' }}>Redirecting you to the right place...</span>
+      <CircularProgress size={40} />
+      <Box mt={2}>
+        <span>Redirecting to your dashboard...</span>
+      </Box>
     </Box>
   );
 };

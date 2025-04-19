@@ -10,6 +10,10 @@ export async function registerUser(username, email, password, userType = 'studen
     // Create the user account
     const user = await account.create(ID.unique(), email, password, username);
     
+    // Normalize role name for consistency
+    let normalizedUserType = userType.toLowerCase();
+    if (normalizedUserType === 'teacher') normalizedUserType = 'tutor';
+    
     // Store additional user data in database
     await databases.createDocument(
       databaseId,
@@ -19,13 +23,16 @@ export async function registerUser(username, email, password, userType = 'studen
         userId: user.$id,
         name: username,
         email: email,
-        userType: userType,
+        userType: normalizedUserType,
         createdAt: new Date().toISOString(),
       }
     );
     
     localStorage.setItem("authToken", user.$id);
-    return user;
+    return {
+      user,
+      userType: normalizedUserType
+    };
   } catch (error) {
     console.error("Registration error:", error);
     throw error;
@@ -47,12 +54,29 @@ export const signIn = async (email, password) => {
       [Query.equal("userId", user.$id)]
     );
     
+    let userType = 'student'; // Default value
+    
     if (profiles.documents.length > 0) {
       const userProfile = profiles.documents[0];
       
+      // Get userType field
+      userType = userProfile.userType || 'student';
+      
+      // Normalize role name
+      userType = userType.toLowerCase();
+      if (userType === 'teacher') userType = 'tutor';
+      
       // Store the user role in localStorage for easier access
-      // This is just for convenience - actual authentication should still check the database
-      localStorage.setItem("userType", userProfile.userType || 'student');
+      localStorage.setItem("userType", userType);
+    }
+    
+    // Redirect based on user type
+    if (userType === 'student') {
+      window.location.href = '/student/dashboard';
+    } else if (userType === 'tutor') {
+      window.location.href = '/teacher/dashboard';
+    } else {
+      window.location.href = '/dashboard';
     }
     
     return session;
