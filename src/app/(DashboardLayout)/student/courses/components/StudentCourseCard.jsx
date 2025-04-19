@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -10,11 +10,19 @@ import {
   Chip,
   CardMedia,
   Divider,
+  Avatar,
+  Tooltip,
+  Popover,
+  Paper,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PersonIcon from '@mui/icons-material/Person';
+import SchoolIcon from '@mui/icons-material/School';
 import Link from 'next/link';
 
-const StudentCourseCard = ({ course }) => {
+const StudentCourseCard = ({ course, tutorName = 'Unknown Instructor', tutorStats = 0 }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+
   // Default image if no thumbnail is available
   const thumbnailUrl = course.thumbnail 
     ? course.thumbnail 
@@ -29,6 +37,16 @@ const StudentCourseCard = ({ course }) => {
     month: 'long',
     day: 'numeric',
   });
+
+  const handleTutorMouseEnter = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleTutorMouseLeave = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
 
   return (
     <Card 
@@ -67,9 +85,68 @@ const StudentCourseCard = ({ course }) => {
             size="small" 
             variant="outlined"
           />
-          <Typography variant="caption" color="text.secondary">
-            Created: {formattedDate}
-          </Typography>
+          <Box 
+            onMouseEnter={handleTutorMouseEnter}
+            onMouseLeave={handleTutorMouseLeave}
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer'
+            }}
+          >
+            <Avatar
+              alt={tutorName}
+              sx={{ width: 24, height: 24, mr: 1, bgcolor: 'primary.main' }}
+            >
+              <PersonIcon sx={{ fontSize: 16 }} />
+            </Avatar>
+            <Typography variant="caption" color="text.secondary">
+              {tutorName}
+            </Typography>
+          </Box>
+          <Popover
+            open={open}
+            anchorEl={anchorEl}
+            onClose={handleTutorMouseLeave}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'center',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'center',
+            }}
+            disableRestoreFocus
+            sx={{
+              pointerEvents: 'none',
+            }}
+          >
+            <Paper sx={{ p: 2, maxWidth: 280 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Avatar
+                  alt={tutorName}
+                  sx={{ width: 40, height: 40, mr: 2, bgcolor: 'primary.main' }}
+                >
+                  <PersonIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    {tutorName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Instructor
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <SchoolIcon sx={{ mr: 1, color: 'primary.main', fontSize: 18 }} />
+                <Typography variant="body2">
+                  {tutorStats} {tutorStats === 1 ? 'course' : 'courses'} available
+                </Typography>
+              </Box>
+            </Paper>
+          </Popover>
         </Box>
         <Typography 
           variant="body2" 
