@@ -5,13 +5,10 @@ import collections from "../collections";
 // Use the Users collection ID from collections.js
 const USER_COLLECTION_ID = collections.users;
 
-export async function registerUser(username, email, password) {
+export async function registerUser(username, email, password, userType = 'student') {
   try {
     // Create the user account
     const user = await account.create(ID.unique(), email, password, username);
-    
-    // Get user type from localStorage (this will be set in the UI)
-    const userType = localStorage.getItem('userType') || 'student';
     
     // Store additional user data in database
     await databases.createDocument(
@@ -55,7 +52,7 @@ export const signIn = async (email, password) => {
       
       // Store the user role in localStorage for easier access
       // This is just for convenience - actual authentication should still check the database
-      localStorage.setItem("userRole", userProfile.role || userProfile.userType || 'student');
+      localStorage.setItem("userType", userProfile.userType || 'student');
     }
     
     return session;
