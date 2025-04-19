@@ -19,7 +19,7 @@ const OtherFrameworkTitle = () => {
                         xs: '30px'
                     }
                 }}>Technology Offerings</Typography>
-                <Typography variant="body1"  textAlign="center" mt={4}>Modernize across a variety of technologies. Simply select to drive in and find the ideal solution tailored to your requirements. <Typography component="span" color="primary.main">Note that each option is sold seprately.</Typography></Typography>
+                <Typography variant="body1"  textAlign="center" mt={4}>Edora across a variety of technologies. Simply select to drive in and find the ideal solution tailored to your requirements. <Typography component="span" color="primary.main">Note that each option is sold seprately.</Typography></Typography>
             </Grid>
         </Grid>
     );

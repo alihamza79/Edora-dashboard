@@ -39,14 +39,14 @@ const DozensCarousel = () => {
             <Slider {...settings} className="dozenscarousel" style={{ marginLeft: '15px' }}>
                 <div>
                     <Box width={380} height={300} borderRadius="16px" sx={{ boxShadow: (theme) => theme.shadows[10]}}>
-                        <Link href="https://modernize-nextjs.adminmart.com/">
+                        <Link href="https://Edora-nextjs.adminmart.com/">
                             <img src='/images/landingpage/demos/demo-main.jpg' alt="user-img" width={380} height={300} style={{ borderRadius: '16px' }} />
                         </Link>
                     </Box>
                 </div>
                 <div>
                     <Box width={380} height={300} borderRadius="16px" sx={{ boxShadow: (theme) => theme.shadows[10]}}>
-                        <Link href="https://modernize-nextjs-dark.vercel.app/dashboards/ecommerce">
+                        <Link href="https://Edora-nextjs-dark.vercel.app/dashboards/ecommerce">
                             <img src='/images/landingpage/demos/demo-dark.jpg' alt="user-img" width={380} height={300} style={{ borderRadius: '16px' }} />
                         </Link>
                     </Box >
@@ -60,21 +60,21 @@ const DozensCarousel = () => {
                 </div>
                 <div>
                     <Box width={380} height={300} borderRadius="16px" sx={{ boxShadow: (theme) => theme.shadows[10]}}>
-                        <Link href="https://modernize-nextjs-horizontal.vercel.app/dashboards/modern">
+                        <Link href="https://Edora-nextjs-horizontal.vercel.app/dashboards/modern">
                             <img src='/images/landingpage/demos/demo-horizontal.jpg' alt="user-img" width={380} height={300} style={{ borderRadius: '16px' }} />
                         </Link>
                     </Box>
                 </div>
                 <div>
                     <Box width={380} height={300} borderRadius="16px" sx={{ boxShadow: (theme) => theme.shadows[10]}}>
-                        <Link href="https://modernize-nextjs.adminmart.com/apps/chats">
+                        <Link href="https://Edora-nextjs.adminmart.com/apps/chats">
                             <img src='/images/landingpage/apps/app-chat.jpg' alt="user-img" width={380} height={300} style={{ borderRadius: '16px' }} />
                         </Link>
                     </Box>
                 </div>
                 <div>
                     <Box width={380} height={300} borderRadius="16px" sx={{ boxShadow: (theme) => theme.shadows[10]}}>
-                        <Link href="https://modernize-nextjs.adminmart.com/apps/email">
+                        <Link href="https://Edora-nextjs.adminmart.com/apps/email">
                             <img src='/images/landingpage/apps/app-email.jpg' alt="user-img" width={380} height={300} style={{ borderRadius: '16px' }} />
                         </Link>
                     </Box>

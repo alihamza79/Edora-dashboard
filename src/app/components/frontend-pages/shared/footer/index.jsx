@@ -15,32 +15,32 @@ const footerLinks = [
             {
                 title: false,
                 titleText: 'Kanban',
-                link: 'https://modernize-nextjs.adminmart.com/apps/kanban',
+                link: 'https://Edora-nextjs.adminmart.com/apps/kanban',
             },
             {
                 title: false,
                 titleText: 'Invoice List',
-                link: 'https://modernize-nextjs.adminmart.com/apps/invoice/list',
+                link: 'https://Edora-nextjs.adminmart.com/apps/invoice/list',
             },
             {
                 title: false,
                 titleText: 'eCommerce',
-                link: 'https://modernize-nextjs.adminmart.com/apps/ecommerce/shop',
+                link: 'https://Edora-nextjs.adminmart.com/apps/ecommerce/shop',
             },
             {
                 title: false,
                 titleText: 'Chat',
-                link: 'https://modernize-nextjs.adminmart.com/apps/chats',
+                link: 'https://Edora-nextjs.adminmart.com/apps/chats',
             },
             {
                 title: false,
                 titleText: 'Tickets',
-                link: 'https://modernize-nextjs.adminmart.com/apps/tickets',
+                link: 'https://Edora-nextjs.adminmart.com/apps/tickets',
             },
             {
                 title: false,
                 titleText: 'Blog',
-                link: 'https://modernize-nextjs.adminmart.com/apps/blog/posts',
+                link: 'https://Edora-nextjs.adminmart.com/apps/blog/posts',
             },
         ],
     },
@@ -54,27 +54,27 @@ const footerLinks = [
             {
                 title: false,
                 titleText: 'Form Layout',
-                link: 'https://modernize-nextjs.adminmart.com/forms/form-layouts',
+                link: 'https://Edora-nextjs.adminmart.com/forms/form-layouts',
             },
             {
                 title: false,
                 titleText: 'Form Horizontal',
-                link: 'https://modernize-nextjs.adminmart.com/forms/form-horizontal',
+                link: 'https://Edora-nextjs.adminmart.com/forms/form-horizontal',
             },
             {
                 title: false,
                 titleText: 'Form Wizard',
-                link: 'https://modernize-nextjs.adminmart.com/forms/form-wizard',
+                link: 'https://Edora-nextjs.adminmart.com/forms/form-wizard',
             },
             {
                 title: false,
                 titleText: 'Form Validation',
-                link: 'https://modernize-nextjs.adminmart.com/forms/form-validation',
+                link: 'https://Edora-nextjs.adminmart.com/forms/form-validation',
             },
             {
                 title: false,
                 titleText: 'Quill Editor',
-                link: 'https://modernize-nextjs.adminmart.com/forms/quill-editor',
+                link: 'https://Edora-nextjs.adminmart.com/forms/quill-editor',
             },
         ],
     },
@@ -88,32 +88,32 @@ const footerLinks = [
             {
                 title: false,
                 titleText: 'Basic Table',
-                link: 'https://modernize-nextjs.adminmart.com/tables/basic',
+                link: 'https://Edora-nextjs.adminmart.com/tables/basic',
             },
             {
                 title: false,
                 titleText: 'Fixed Header',
-                link: 'https://modernize-nextjs.adminmart.com/tables/fixed-header',
+                link: 'https://Edora-nextjs.adminmart.com/tables/fixed-header',
             },
             {
                 title: false,
                 titleText: 'Pagination Table',
-                link: 'https://modernize-nextjs.adminmart.com/tables/pagination',
+                link: 'https://Edora-nextjs.adminmart.com/tables/pagination',
             },
             {
                 title: false,
                 titleText: 'React Dense Table',
-                link: 'https://modernize-nextjs.adminmart.com/react-tables/dense',
+                link: 'https://Edora-nextjs.adminmart.com/react-tables/dense',
             },
             {
                 title: false,
                 titleText: 'Row Selection Table',
-                link: 'https://modernize-nextjs.adminmart.com/react-tables/row-selection',
+                link: 'https://Edora-nextjs.adminmart.com/react-tables/row-selection',
             },
             {
                 title: false,
                 titleText: 'Drag n Drop Table',
-                link: 'https://modernize-nextjs.adminmart.com/react-tables/drag-drop',
+                link: 'https://Edora-nextjs.adminmart.com/react-tables/drag-drop',
             },
         ],
     },
@@ -183,7 +183,7 @@ const Footer = () => {
                 <Box py="40px" useflexgap="true" flexWrap="wrap" display="flex" justifyContent="space-between">
                     <Stack direction="row" gap={1} alignItems="center">
                         <Image src="/images/logos/logoIcon.svg" width={20} height={20} alt="logo" />
-                        <Typography variant="body1" fontSize="15px">All rights reserved by Modernize. </Typography>
+                        <Typography variant="body1" fontSize="15px">All rights reserved by Edora. </Typography>
                     </Stack>
                     <Typography variant="body1" fontSize="15px">Produced by <Typography component={Link} color="primary.main" href="https://adminmart.com/">AdminMart</Typography>.</Typography>
                 </Box>

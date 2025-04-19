@@ -43,12 +43,12 @@ const featuresData = [
   {
     icon: <IconAdjustments width={40} height={40} strokeWidth={1.5} />,
     title: '45+ UI Components',
-    subtext: 'Almost 45+ UI Components being given with Modernize Admin Pack.',
+    subtext: 'Almost 45+ UI Components being given with Edora Admin Pack.',
   },
   {
     icon: <IconPresentation width={40} height={40} strokeWidth={1.5} />,
     title: '4+ Frontend Pages',
-    subtext: 'We have added useful frontend pages with Modernize Admin',
+    subtext: 'We have added useful frontend pages with Edora Admin',
   },
   {
     icon: <IconPackage width={40} height={40} strokeWidth={1.5} />,
@@ -58,7 +58,7 @@ const featuresData = [
   {
     icon: <IconAdjustments width={40} height={40} strokeWidth={1.5} />,
     title: '45+ UI Components',
-    subtext: 'Almost 45+ UI Components being given with Modernize Admin Pack.',
+    subtext: 'Almost 45+ UI Components being given with Edora Admin Pack.',
   },
   {
     icon: <IconTag width={40} height={40} strokeWidth={1.5} />,
