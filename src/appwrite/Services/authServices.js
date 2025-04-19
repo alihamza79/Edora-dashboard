@@ -1,6 +1,6 @@
 import { account, databases, databaseId } from "../config";
 import { ID, Query } from "appwrite";
-import collections from "../collections";
+import { collections } from "../collections";
 
 // Use the Users collection ID from collections.js
 const USER_COLLECTION_ID = collections.users;

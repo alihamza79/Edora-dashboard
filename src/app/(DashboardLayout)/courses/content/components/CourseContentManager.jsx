@@ -54,6 +54,7 @@ import { projectID, databaseId } from '@/appwrite/config';
 import { useAuth } from '@/app/context/AuthContext';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import storageServices from '@/appwrite/Services/storageServices';
+import { generateTranscript } from '@/utils/transcriptService';
 
 const CourseContentManager = ({ courseId }) => {
   const { user } = useAuth();
@@ -70,6 +71,7 @@ const CourseContentManager = ({ courseId }) => {
     fileUrl: '',
     duration: '',
     sequence: 0,
+    transcript: ''
   });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -142,6 +144,7 @@ const CourseContentManager = ({ courseId }) => {
         type: 'video',
         fileUrl: contentItem.fileUrl || '',
         duration: contentItem.duration || '',
+        transcript: contentItem.transcript || ''
       });
       setEditingContentId(contentItem.$id);
       if (contentItem.fileUrl) {
@@ -155,6 +158,7 @@ const CourseContentManager = ({ courseId }) => {
         type: 'video',
         fileUrl: '',
         duration: '',
+        transcript: ''
       });
       setEditingContentId(null);
       setPreviewUrl('');
@@ -227,26 +231,34 @@ const CourseContentManager = ({ courseId }) => {
 
   // Submit form to add or update content
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
-
+    
+    // Validate form data
+    if (!formData.title) {
+      setError('Title is required');
+      setLoading(false);
+      return;
+    }
+    
     try {
       // Upload file if selected
       let fileUrl = formData.fileUrl;
       if (selectedFile) {
         fileUrl = await uploadFile();
       }
-
+      
+      // Initialize Appwrite client
       const client = new Client();
       client
         .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
         .setProject(projectID);
-
+      
       const databases = new Databases(client);
-
-      // Prepare data
+      
+      // Prepare the data to be saved
       const contentData = {
         courseId: courseId,
         title: formData.title,
@@ -256,10 +268,12 @@ const CourseContentManager = ({ courseId }) => {
         duration: formData.duration,
         createdBy: user.$id,
       };
-
-      // Create or update the content
+      
+      let documentId;
+      
       if (editingContentId) {
         // Update existing content
+        documentId = editingContentId;
         await databases.updateDocument(
           databaseId,
           collections.courseContents,
@@ -291,14 +305,43 @@ const CourseContentManager = ({ courseId }) => {
           ID.unique(),
           contentData
         );
+        
+        documentId = newContent.$id;
+        
         setSuccess('Content added successfully!');
 
         // Add to the content items list
         setContentItems(prev => [...prev, newContent]);
       }
-
+      
       // Close dialog and reset form
       handleCloseDialog();
+      
+      // If we have a video file and it's a new upload, generate transcript
+      if (fileUrl && selectedFile) {
+        try {
+          setSuccess('Content saved. Generating transcript... This may take a few minutes.');
+          
+          // Generate transcript using AssemblyAI
+          generateTranscript(fileUrl, documentId)
+            .then(result => {
+              console.log('Transcript generation result:', result);
+              if (result.success) {
+                setSuccess(`Content saved and transcript generated with ${result.segments} segments.`);
+              }
+            })
+            .catch(error => {
+              console.error('Error generating transcript:', error);
+              // Don't set error here as the content was successfully saved
+            });
+          
+          // We don't await the transcript generation 
+          // It will be processed in the background
+        } catch (transcriptError) {
+          console.error('Error initiating transcript generation:', transcriptError);
+          // Don't set error here, as the content was successfully saved
+        }
+      }
     } catch (error) {
       console.error('Error saving content:', error);
       setError(`Failed to save content: ${error.message}`);
@@ -789,6 +832,12 @@ const CourseContentManager = ({ courseId }) => {
                     </Box>
                   )}
                 </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Video transcripts will be generated automatically when you upload a video. The process may take a few minutes.
+                </Typography>
               </Grid>
             </Grid>
           </Box>

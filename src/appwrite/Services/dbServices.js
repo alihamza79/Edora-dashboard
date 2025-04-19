@@ -5,26 +5,23 @@ import storageServices from "./storageServices";
 
 const db = {};
 
-collections.forEach((col) => {
-  db[col.name] = {
-    create: async (payload, id = ID.unique()) =>
-      await databases.createDocument(databaseId, col.id, id, payload),
+// Process collections as an object of key-value pairs
+Object.entries(collections).forEach(([name, collectionId]) => {
+  db[name] = {
+    create: async (payload, documentId = ID.unique()) =>
+      await databases.createDocument(databaseId, collectionId, documentId, payload),
 
-    update: async (id, payload) =>
-      await databases.updateDocument(databaseId, col.id, id, payload),
+    update: async (documentId, payload) =>
+      await databases.updateDocument(databaseId, collectionId, documentId, payload),
 
-    get: async (id) => await databases.getDocument(databaseId, col.id, id),
+    get: async (documentId) => await databases.getDocument(databaseId, collectionId, documentId),
 
     list: async (queries) =>
-      await databases.listDocuments(databaseId, col.id, queries),
+      await databases.listDocuments(databaseId, collectionId, queries),
 
-    delete: async (id) =>
-      await databases.deleteDocument(databaseId, col.id, id),
+    delete: async (documentId) =>
+      await databases.deleteDocument(databaseId, collectionId, documentId),
   };
 });
-
-
-
-
 
 export default db;
