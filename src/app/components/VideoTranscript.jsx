@@ -29,8 +29,38 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTranscript, setFilteredTranscript] = useState(transcript);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [wordHighlightPosition, setWordHighlightPosition] = useState(0);
   const transcriptListRef = useRef(null);
   const activeItemRef = useRef(null);
+  const timerRef = useRef(null);
+
+  // Process transcript to add word timestamps
+  const processedTranscript = useRef([]);
+  
+  useEffect(() => {
+    // Process transcript to estimate word timings
+    const processed = transcript.map(segment => {
+      const words = segment.text.split(' ');
+      const duration = segment.end - segment.start;
+      const avgWordDuration = duration / words.length;
+      
+      // Create word objects with estimated timestamps
+      const wordObjects = words.map((word, idx) => ({
+        word,
+        start: segment.start + (idx * avgWordDuration),
+        end: segment.start + ((idx + 1) * avgWordDuration)
+      }));
+      
+      return {
+        ...segment,
+        words: wordObjects
+      };
+    });
+    
+    processedTranscript.current = processed;
+    
+  }, [transcript]);
 
   // Filter transcript when search term changes
   useEffect(() => {
@@ -45,34 +75,107 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
     setFilteredTranscript(filtered);
   }, [searchTerm, transcript]);
 
+  // Listen for video time updates
   useEffect(() => {
     if (!videoRef || !videoRef.current) return;
 
+    // Main time update handler
     const handleTimeUpdate = () => {
-      const currentTime = videoRef.current.currentTime;
+      const time = videoRef.current.currentTime;
+      setCurrentTime(time);
       
       // Find the current segment based on video's current time
       const index = transcript.findIndex(
-        segment => currentTime >= segment.start && currentTime <= segment.end
+        segment => time >= segment.start && time <= segment.end
       );
       
       // If a valid segment is found, update the current segment index
       if (index !== -1) {
         setCurrentSegmentIndex(index);
+        
+        // Find the current word within the segment
+        const currentSegment = processedTranscript.current[index];
+        if (currentSegment && currentSegment.words) {
+          const wordIdx = currentSegment.words.findIndex(
+            word => time >= word.start && time <= word.end
+          );
+          
+          if (wordIdx !== -1) {
+            setWordHighlightPosition(wordIdx);
+          }
+        }
       }
     };
 
-    // Add event listener to video element
+    // For smoother updates, create a timer
+    const startTimeUpdateTimer = () => {
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
+      // Update every 50ms for smoother word-by-word highlighting
+      timerRef.current = setInterval(() => {
+        if (videoRef.current && !videoRef.current.paused) {
+          const time = videoRef.current.currentTime;
+          setCurrentTime(time);
+          
+          // Find current segment
+          const index = transcript.findIndex(
+            segment => time >= segment.start && time <= segment.end
+          );
+          
+          if (index !== -1) {
+            if (index !== currentSegmentIndex) {
+              setCurrentSegmentIndex(index);
+            }
+            
+            // Find current word
+            const currentSegment = processedTranscript.current[index];
+            if (currentSegment && currentSegment.words) {
+              const wordIdx = currentSegment.words.findIndex(
+                word => time >= word.start && time <= word.end
+              );
+              
+              if (wordIdx !== -1) {
+                setWordHighlightPosition(wordIdx);
+              }
+            }
+          }
+        }
+      }, 50);
+    };
+
+    // Add event listeners to video element
     const video = videoRef.current;
     video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('play', startTimeUpdateTimer);
+    video.addEventListener('pause', () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    });
+    
+    // Start the timer
+    startTimeUpdateTimer();
 
     // Cleanup
     return () => {
       if (video) {
         video.removeEventListener('timeupdate', handleTimeUpdate);
+        video.removeEventListener('play', startTimeUpdateTimer);
+        video.removeEventListener('pause', () => {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+        });
+      }
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     };
-  }, [transcript, videoRef]);
+  }, [transcript, videoRef, currentSegmentIndex]);
 
   // Scroll to current segment when it changes
   useEffect(() => {
@@ -82,6 +185,9 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
         block: 'center'
       });
     }
+    
+    // Reset word position when segment changes
+    setWordHighlightPosition(0);
   }, [currentSegmentIndex, searchTerm]);
 
   // Handle clicking on a transcript segment
@@ -103,6 +209,9 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
       }
     }
     
+    // Reset word position
+    setWordHighlightPosition(0);
+    
     videoRef.current.play();
   };
 
@@ -110,12 +219,38 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   // Clear search
   const handleClearSearch = () => {
     setSearchTerm('');
+  };
+
+  // Render words with highlighting for the current word
+  const renderHighlightedText = (text, isCurrentSegment) => {
+    if (!isCurrentSegment) return text;
+    
+    const words = text.split(' ');
+    
+    return (
+      <Box component="span">
+        {words.map((word, idx) => (
+          <Box
+            component="span"
+            key={idx}
+            sx={{
+              color: idx <= wordHighlightPosition ? 'primary.main' : 'text.secondary',
+              fontWeight: idx <= wordHighlightPosition ? 'medium' : 'normal',
+              transition: 'color 0.1s ease',
+              mx: '1px'
+            }}
+          >
+            {word}{idx < words.length - 1 ? ' ' : ''}
+          </Box>
+        ))}
+      </Box>
+    );
   };
 
   if (!transcript || transcript.length === 0) {
@@ -173,7 +308,7 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
                 }}
               >
                 <AccessTimeIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
-                {videoRef && videoRef.current ? formatTime(videoRef.current.currentTime) : "00:00"}
+                {formatTime(currentTime)}
               </Typography>
             </Tooltip>
           </Box>
@@ -279,22 +414,24 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
                   </IconButton>
                 </Box>
                 
-                <Typography 
-                  variant={isCurrentSegment ? 'body1' : 'body2'}
-                  sx={{ 
-                    fontWeight: isCurrentSegment ? 'medium' : 'normal',
-                    color: isCurrentSegment ? 'text.primary' : 'text.secondary',
-                    flex: 1,
-                    lineHeight: 1.6
-                  }}
-                >
-                  {searchTerm ? (
-                    // Highlight matching text if searching
-                    highlightText(segment.text, searchTerm)
-                  ) : (
-                    segment.text
-                  )}
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography 
+                    variant={isCurrentSegment ? 'body1' : 'body2'}
+                    sx={{ 
+                      lineHeight: 1.6,
+                      position: 'relative',
+                      display: 'inline'
+                    }}
+                  >
+                    {searchTerm ? (
+                      // Highlight matching text if searching
+                      highlightText(segment.text, searchTerm)
+                    ) : (
+                      // Render with word-by-word highlighting
+                      renderHighlightedText(segment.text, isCurrentSegment)
+                    )}
+                  </Typography>
+                </Box>
               </Box>
             </ListItem>
           );
