@@ -19,6 +19,34 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to determine user role from multiple sources
+  const determineUserRole = (userData, loggedInUser) => {
+    // Check userType field in user document
+    let userRole = 'student'; // Default role
+    
+    // First check the userType from the user document
+    if (userData && userData.userType) {
+      userRole = userData.userType.toLowerCase();
+    }
+    
+    // Then check localStorage as a backup
+    const localUserType = localStorage.getItem('userType');
+    if (!userRole || userRole === 'student') {
+      if (localUserType) {
+        userRole = localUserType.toLowerCase();
+      }
+    }
+    
+    // Normalize role names for consistency
+    if (userRole === 'teacher') userRole = 'tutor';
+    
+    // Return the user object with role
+    return {
+      ...loggedInUser,
+      role: userRole
+    };
+  };
+
   // Check if user is already logged in
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -37,21 +65,9 @@ export const AuthProvider = ({ children }) => {
           if (usersResponse.documents.length > 0) {
             const userData = usersResponse.documents[0];
             
-            // Get role from userType field only
-            let userRole = 'student'; // Default role
-            
-            if (userData.userType) {
-              userRole = userData.userType.toLowerCase();
-              
-              // Normalize role names for consistency
-              if (userRole === 'teacher') userRole = 'tutor';
-            }
-            
-            // Add role to user object
-            setUser({
-              ...loggedInUser,
-              role: userRole
-            });
+            // Use helper function to determine role
+            const userWithRole = determineUserRole(userData, loggedInUser);
+            setUser(userWithRole);
           } else {
             // If user document not found, use default role
             setUser({
@@ -95,28 +111,14 @@ export const AuthProvider = ({ children }) => {
         if (usersResponse.documents.length > 0) {
           const userData = usersResponse.documents[0];
           
-          // Get role from userType field only
-          let userRole = 'student'; // Default role
-          
-          if (userData.userType) {
-            userRole = userData.userType.toLowerCase();
-            
-            // Normalize role names for consistency
-            if (userRole === 'teacher') userRole = 'tutor';
-          }
-          
-          // Add role to user object
-          const userWithRole = {
-            ...loggedInUser,
-            role: userRole
-          };
-          
+          // Use helper function to determine role
+          const userWithRole = determineUserRole(userData, loggedInUser);
           setUser(userWithRole);
           
           // Force redirect to the appropriate dashboard based on role
-          if (userRole === 'student') {
+          if (userWithRole.role === 'student') {
             window.location.href = '/student/dashboard';
-          } else if (userRole === 'tutor') {
+          } else if (userWithRole.role === 'tutor') {
             window.location.href = '/teacher/dashboard';
           } else {
             window.location.href = '/dashboard';
