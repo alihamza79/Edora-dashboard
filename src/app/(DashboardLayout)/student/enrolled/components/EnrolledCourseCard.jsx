@@ -13,6 +13,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import Link from 'next/link';
 
@@ -29,8 +30,11 @@ const EnrolledCourseCard = ({ course }) => {
     day: 'numeric',
   });
 
-  // Calculate mock progress (this would be replaced with actual progress tracking)
-  const progress = Math.floor(Math.random() * 100);
+  // Get progress from enrollment data or default to 0
+  const progress = course.progress || 0;
+
+  // Calculate completed lessons
+  const completedLessonsCount = course.completedLessons ? course.completedLessons.split(',').length : 0;
 
   return (
     <Card 
@@ -102,18 +106,24 @@ const EnrolledCourseCard = ({ course }) => {
             <Typography variant="body2" color="text.secondary">{progress}%</Typography>
           </Box>
           <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
+          
+          {completedLessonsCount > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              {completedLessonsCount} lesson{completedLessonsCount !== 1 ? 's' : ''} completed
+            </Typography>
+          )}
         </Box>
       </CardContent>
       <Divider />
       <CardActions sx={{ justifyContent: 'center', padding: '16px' }}>
-        <Link href={`/student/courses/learn/${course.$id}`} passHref>
+        <Link href={`/student/courses/${course.$id}`} passHref>
           <Button 
             variant="contained" 
             color="primary"
-            startIcon={<PlayCircleIcon />}
+            startIcon={<VisibilityIcon />}
             fullWidth
           >
-            Continue Learning
+            View Course
           </Button>
         </Link>
       </CardActions>

@@ -68,13 +68,24 @@ const EnrolledCoursesList = () => {
               ...courseResponse,
               enrollmentId: enrollment.$id,
               enrolledAt: enrollment.enrolledAt,
-              enrollmentStatus: enrollment.status
+              enrollmentStatus: enrollment.status,
+              progress: enrollment.progress || 0,
+              completedLessons: enrollment.completedLessons || '',
+              lastUpdated: enrollment.lastUpdated
             });
           } catch (err) {
             console.error(`Error fetching course ${courseId}:`, err);
             // Continue with other courses even if one fails
           }
         }
+
+        // Sort by last updated date (most recent first)
+        coursesData.sort((a, b) => {
+          if (a.lastUpdated && b.lastUpdated) {
+            return new Date(b.lastUpdated) - new Date(a.lastUpdated);
+          }
+          return 0;
+        });
 
         setCourses(coursesData);
         setLoading(false);
