@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useRef } from 'react';
 import { Box, Typography, Paper, Chip, Grid, Button, Divider, Stack, CircularProgress, Alert, Card, CardMedia, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails, Tabs, Tab, Checkbox, LinearProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -17,6 +17,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoIcon from '@mui/icons-material/Info';
 import CourseChat from '@/app/components/CourseChat';
+import VideoTranscript from '@/app/components/VideoTranscript';
+import { generateTranscript } from '@/utils/transcriptService';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const CourseDetailsPage = ({ params }) => {
   const courseId = params.id;
@@ -35,6 +38,10 @@ const CourseDetailsPage = ({ params }) => {
   const [progressPercent, setProgressPercent] = useState(0);
   const [enrollmentId, setEnrollmentId] = useState(null);
   const [savingProgress, setSavingProgress] = useState(false);
+  const videoRef = useRef(null);
+  const [currentTranscriptIndex, setCurrentTranscriptIndex] = useState(0);
+  const [generatingTranscript, setGeneratingTranscript] = useState(false);
+  const [transcriptError, setTranscriptError] = useState(null);
 
   useEffect(() => {
     const fetchCourseAndEnrollmentStatus = async () => {
@@ -147,6 +154,51 @@ const CourseDetailsPage = ({ params }) => {
       setProgressPercent(percent);
     }
   }, [completedLessons, courseContent]);
+
+  // Enhance the transcript sync effect
+  useEffect(() => {
+    if (!videoRef.current || !currentContent || !currentContent.transcript) return;
+    
+    const transcriptData = getTranscriptData();
+    if (transcriptData.length === 0) return;
+    
+    const handleTimeUpdate = () => {
+      const currentTime = videoRef.current.currentTime;
+      
+      // Find current segment that contains this timestamp
+      const index = transcriptData.findIndex(
+        segment => currentTime >= segment.start && currentTime <= segment.end
+      );
+      
+      if (index !== -1 && index !== currentTranscriptIndex) {
+        setCurrentTranscriptIndex(index);
+        
+        // Find the active transcript element and scroll it into view
+        requestAnimationFrame(() => {
+          const activeItem = document.querySelector('.transcript-item.active');
+          if (activeItem) {
+            activeItem.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }
+        });
+      }
+    };
+    
+    // Reset transcript index when video changes
+    setCurrentTranscriptIndex(0);
+    
+    const video = videoRef.current;
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    
+    // Cleanup
+    return () => {
+      if (video) {
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+      }
+    };
+  }, [currentContent, videoRef.current]);
 
   const handleEnroll = async () => {
     if (!user || !user.$id) {
@@ -262,6 +314,84 @@ const CourseDetailsPage = ({ params }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Parse transcript data
+  const getTranscriptData = () => {
+    if (!currentContent) {
+      console.log('No current content available');
+      return [];
+    }
+    
+    console.log('Current content:', currentContent);
+    console.log('Has transcript?', !!currentContent.transcript);
+    
+    if (!currentContent.transcript) {
+      return [];
+    }
+    
+    try {
+      const parsedData = JSON.parse(currentContent.transcript);
+      console.log('Parsed transcript data:', parsedData);
+      console.log('Transcript segments:', parsedData.length);
+      return parsedData;
+    } catch (e) {
+      console.error('Error parsing transcript data:', e);
+      return [];
+    }
+  };
+
+  // Check if video URL is accessible
+  const checkVideoUrl = async (url) => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      return response.ok;
+    } catch (error) {
+      console.error('Error checking video URL:', error);
+      return false;
+    }
+  };
+
+  // Generate transcript manually
+  const handleGenerateTranscript = async () => {
+    if (!currentContent || !currentContent.fileUrl) {
+      console.error('No video URL available for transcript generation');
+      setTranscriptError('No video available for transcript generation');
+      return;
+    }
+    
+    setGeneratingTranscript(true);
+    setTranscriptError(null);
+    
+    try {
+      console.log('Manually generating transcript for video:', currentContent.fileUrl);
+      const result = await generateTranscript(currentContent.fileUrl, currentContent.$id);
+      console.log('Transcript generation result:', result);
+      
+      if (result.success) {
+        // Refresh the current content to show the transcript
+        const client = new Client();
+        client
+          .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+          .setProject(projectID);
+
+        const databases = new Databases(client);
+        
+        const updatedContent = await databases.getDocument(
+          databaseId,
+          collections.courseContents,
+          currentContent.$id
+        );
+        
+        setCurrentContent(updatedContent);
+        console.log('Content refreshed with transcript');
+      }
+    } catch (error) {
+      console.error('Error generating transcript:', error);
+      setTranscriptError('Failed to generate transcript. Please try again.');
+    } finally {
+      setGeneratingTranscript(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -321,7 +451,7 @@ const CourseDetailsPage = ({ params }) => {
         <Box sx={{ mb: 4 }}>
           <Grid container spacing={2}>
             {/* Video Player */}
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={8} lg={8}>
               <Paper elevation={3} sx={{ p: 0, borderRadius: 2, overflow: 'hidden', position: 'relative', mb: 2 }}>
                 {currentContent.fileUrl ? (
                   <Box sx={{ position: 'relative', width: '100%', pt: '56.25%' /* 16:9 Aspect Ratio */ }}>
@@ -332,6 +462,8 @@ const CourseDetailsPage = ({ params }) => {
                         height="100%"
                         src={currentContent.fileUrl}
                         style={{ objectFit: 'cover' }}
+                        ref={videoRef}
+                        key={currentContent.$id}
                       >
                         Your browser does not support the video tag.
                       </video>
@@ -401,14 +533,48 @@ const CourseDetailsPage = ({ params }) => {
             </Grid>
             
             {/* Course Content Sidebar */}
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} lg={4}>
               <Paper elevation={3} sx={{ 
                 borderRadius: 2, 
-                maxHeight: '600px',
+                height: 'calc(100vh - 200px)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                position: 'sticky',
+                top: '16px'
               }}>
-                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                {/* Transcript Component */}
+                {currentContent && currentContent.transcript ? (
+                  <VideoTranscript 
+                    transcript={getTranscriptData()} 
+                    videoRef={videoRef}
+                  />
+                ) : (
+                  <Box sx={{ p: 2, textAlign: 'center', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography variant="h6" gutterBottom>Transcript</Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      No transcript available for this video.
+                    </Typography>
+                    
+                    {transcriptError && (
+                      <Typography variant="body2" color="error" sx={{ my: 1 }}>
+                        {transcriptError}
+                      </Typography>
+                    )}
+                    
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      startIcon={generatingTranscript ? <CircularProgress size={16} /> : <RefreshIcon />}
+                      onClick={handleGenerateTranscript}
+                      disabled={generatingTranscript}
+                      sx={{ mt: 1 }}
+                    >
+                      {generatingTranscript ? 'Generating...' : 'Generate Transcript'}
+                    </Button>
+                  </Box>
+                )}
+                
+                <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', borderBottom: '1px solid' }}>
                   <Typography variant="h6">Course progress</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <Box sx={{ width: '100%', mr: 1 }}>
