@@ -418,20 +418,31 @@ const CourseContent = ({ courseId }) => {
         
         <Grid item xs={12} md={4}>
           <Paper elevation={3} sx={{ height: '100%' }}>
-            <Box p={2}>
-              <Typography variant="h6" gutterBottom>
-                Course Content
+            <Box p={4} pb={3}>
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Course content
               </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Your progress: {progress}%
-                </Typography>
-                <Box sx={{ width: '100%', bgcolor: 'rgba(0,0,0,0.1)', height: 10, borderRadius: 5 }}>
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Your progress
+                  </Typography>
+                  <Typography variant="body2" fontWeight="500" color="primary.main">
+                    {progress}%
+                  </Typography>
+                </Box>
+                <Box sx={{ 
+                  width: '100%', 
+                  bgcolor: 'rgba(0,0,0,0.1)', 
+                  height: 8, 
+                  borderRadius: 10,
+                  mb: 1
+                }}>
                   <Box sx={{ 
                     width: `${progress}%`, 
                     bgcolor: '#4caf50', 
                     height: '100%', 
-                    borderRadius: 5,
+                    borderRadius: 10,
                     transition: 'width 0.3s ease'
                   }} />
                 </Box>
@@ -445,13 +456,29 @@ const CourseContent = ({ courseId }) => {
             <Box sx={{ maxHeight: '600px', overflow: 'auto' }}>
               {sections.length > 0 ? (
                 sections.map((section) => (
-                  <Accordion key={section.$id} defaultExpanded>
+                  <Accordion 
+                    key={section.$id} 
+                    defaultExpanded
+                    disableGutters
+                    elevation={0}
+                    sx={{
+                      '&:before': {
+                        display: 'none',
+                      },
+                      borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
+                    }}
+                  >
                     <AccordionSummary
                       expandIcon={<ExpandMoreIcon />}
                       aria-controls={`section-${section.$id}-content`}
                       id={`section-${section.$id}-header`}
+                      sx={{ 
+                        minHeight: 48,
+                        px: 3,
+                        py: 1.5
+                      }}
                     >
-                      <Typography variant="subtitle1">
+                      <Typography variant="subtitle1" fontWeight="500">
                         {section.title}
                       </Typography>
                     </AccordionSummary>
@@ -466,27 +493,74 @@ const CourseContent = ({ courseId }) => {
                               onClick={() => handleSelectLesson(lesson)}
                               sx={{
                                 borderLeft: completedLessons[lesson.$id] ? '3px solid #4caf50' : 'none',
+                                px: 3,
+                                py: 2,
+                                '&.Mui-selected': {
+                                  backgroundColor: 'rgba(25, 118, 210, 0.08)'
+                                },
+                                '&:hover': {
+                                  backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                }
                               }}
                             >
-                              <ListItemIcon>
-                                <Checkbox
-                                  edge="start"
-                                  checked={!!completedLessons[lesson.$id]}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleLessonCompletion(lesson.$id, e);
-                                  }}
-                                  color="success"
-                                />
+                              <ListItemIcon sx={{ minWidth: 36 }}>
+                                {completedLessons[lesson.$id] ? (
+                                  <CheckCircleIcon
+                                    color="success"
+                                    sx={{ fontSize: 24 }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleLessonCompletion(lesson.$id, e);
+                                    }}
+                                  />
+                                ) : (
+                                  <Checkbox
+                                    edge="start"
+                                    checked={false}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleLessonCompletion(lesson.$id, e);
+                                    }}
+                                    color="success"
+                                    size="small"
+                                  />
+                                )}
                               </ListItemIcon>
                               <ListItemText 
-                                primary={lesson.title} 
-                                secondary={`${lesson.duration || '-- min'}`}
-                                primaryTypographyProps={{
-                                  style: completedLessons[lesson.$id] ? { 
-                                    textDecoration: 'line-through',
-                                    color: 'rgba(0, 0, 0, 0.5)'
-                                  } : {}
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <Typography 
+                                      variant="body1" 
+                                      sx={{
+                                        ...completedLessons[lesson.$id] ? { 
+                                          textDecoration: 'line-through',
+                                          color: 'rgba(0, 0, 0, 0.5)'
+                                        } : {
+                                          fontWeight: 500
+                                        }
+                                      }}
+                                    >
+                                      {lesson.title}
+                                    </Typography>
+                                    {lesson.videoUrl && (
+                                      <PlayCircleOutlineIcon 
+                                        sx={{ 
+                                          fontSize: 18, 
+                                          ml: 1, 
+                                          color: 'primary.main',
+                                          opacity: 0.7
+                                        }} 
+                                      />
+                                    )}
+                                  </Box>
+                                }
+                                secondary={`${lesson.duration || '1 hour'}`}
+                                secondaryTypographyProps={{
+                                  style: {
+                                    marginTop: '4px',
+                                    fontSize: '0.75rem',
+                                    color: 'rgba(0, 0, 0, 0.6)'
+                                  }
                                 }}
                               />
                             </ListItemButton>

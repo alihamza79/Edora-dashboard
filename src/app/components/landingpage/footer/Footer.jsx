@@ -13,7 +13,7 @@ const Footer = () => {
         <Grid item xs={12} sm={5} lg={4} textAlign="center">
           <Image src='/images/logos/logoIcon.svg' alt="icon" width={35} height={35} />
           <Typography fontSize="16" color="textSecondary" mt={1} mb={4}>
-            All rights reserved by Modernize. Designed & Developed by
+            All rights reserved by Edora. Designed & Developed by
             <Link target="_blank" href="https://adminmart.com/">
               <Typography color="textSecondary" component="span" display="inline">
                 {' '}

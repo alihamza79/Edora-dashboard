@@ -77,105 +77,78 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
 
   // Listen for video time updates
   useEffect(() => {
-    if (!videoRef || !videoRef.current) return;
-
-    // Main time update handler
     const handleTimeUpdate = () => {
-      const time = videoRef.current.currentTime;
-      setCurrentTime(time);
+      // Check if current word should be highlighted
+      if (!transcript) return;
       
-      // Find the current segment based on video's current time
-      const index = transcript.findIndex(
-        segment => time >= segment.start && time <= segment.end
-      );
+      let video;
+      // Handle both direct video elements and our custom VideoPlayer component
+      if (videoRef.current) {
+        if (videoRef.current.isCustomPlayer) {
+          // This is our custom VideoPlayer component
+          video = videoRef.current;
+        } else if (videoRef.current instanceof HTMLVideoElement) {
+          // This is a direct video element
+          video = videoRef.current;
+        } else if (videoRef.current.videoElement instanceof HTMLVideoElement) {
+          // Access the video element through the videoElement getter
+          video = videoRef.current.videoElement;
+        }
+      }
       
-      // If a valid segment is found, update the current segment index
-      if (index !== -1) {
-        setCurrentSegmentIndex(index);
+      if (!video) return;
+      
+      const currentTime = video.currentTime;
+      
+      // Find the word that should be highlighted based on current time
+      let newCurrentWordIndex = -1;
+      for (let i = 0; i < transcript.length; i++) {
+        const word = transcript[i];
+        if (currentTime >= word.start && currentTime <= word.end) {
+          newCurrentWordIndex = i;
+          break;
+        }
         
-        // Find the current word within the segment
-        const currentSegment = processedTranscript.current[index];
-        if (currentSegment && currentSegment.words) {
-          const wordIdx = currentSegment.words.findIndex(
-            word => time >= word.start && time <= word.end
-          );
-          
-          if (wordIdx !== -1) {
-            setWordHighlightPosition(wordIdx);
-          }
+        // If passed this word's end time, but haven't reached next word's start time
+        if (i < transcript.length - 1 && 
+            currentTime > word.end && 
+            currentTime < transcript[i+1].start) {
+          newCurrentWordIndex = -1;
+          break;
         }
-      }
-    };
-
-    // For smoother updates, create a timer
-    const startTimeUpdateTimer = () => {
-      // Clear any existing timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
       }
       
-      // Update every 50ms for smoother word-by-word highlighting
-      timerRef.current = setInterval(() => {
-        if (videoRef.current && !videoRef.current.paused) {
-          const time = videoRef.current.currentTime;
-          setCurrentTime(time);
-          
-          // Find current segment
-          const index = transcript.findIndex(
-            segment => time >= segment.start && time <= segment.end
-          );
-          
-          if (index !== -1) {
-            if (index !== currentSegmentIndex) {
-              setCurrentSegmentIndex(index);
-            }
-            
-            // Find current word
-            const currentSegment = processedTranscript.current[index];
-            if (currentSegment && currentSegment.words) {
-              const wordIdx = currentSegment.words.findIndex(
-                word => time >= word.start && time <= word.end
-              );
-              
-              if (wordIdx !== -1) {
-                setWordHighlightPosition(wordIdx);
-              }
-            }
-          }
-        }
-      }, 50);
-    };
-
-    // Add event listeners to video element
-    const video = videoRef.current;
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('play', startTimeUpdateTimer);
-    video.addEventListener('pause', () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+      if (newCurrentWordIndex !== wordHighlightPosition) {
+        setWordHighlightPosition(newCurrentWordIndex);
       }
-    });
+    };
     
-    // Start the timer
-    startTimeUpdateTimer();
-
-    // Cleanup
-    return () => {
-      if (video) {
-        video.removeEventListener('timeupdate', handleTimeUpdate);
-        video.removeEventListener('play', startTimeUpdateTimer);
-        video.removeEventListener('pause', () => {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-          }
-        });
+    // Add event listener for time updates
+    if (videoRef.current) {
+      if (typeof videoRef.current.addEventListener === 'function') {
+        // Direct video element or player with addEventListener method
+        videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
+      } else if (videoRef.current.videoElement instanceof HTMLVideoElement) {
+        // Access through videoElement getter
+        videoRef.current.videoElement.addEventListener('timeupdate', handleTimeUpdate);
+      } else {
+        // Fallback: use a timer for updates
+        const intervalId = setInterval(handleTimeUpdate, 100);
+        return () => clearInterval(intervalId);
       }
-      
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+    }
+    
+    // Cleanup function
+    return () => {
+      if (videoRef.current) {
+        if (typeof videoRef.current.removeEventListener === 'function') {
+          videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
+        } else if (videoRef.current.videoElement instanceof HTMLVideoElement) {
+          videoRef.current.videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+        }
       }
     };
-  }, [transcript, videoRef, currentSegmentIndex]);
+  }, [transcript, wordHighlightPosition, videoRef]);
 
   // Scroll to current segment when it changes
   useEffect(() => {
@@ -198,21 +171,37 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
       // If searching, we need to find the actual index in the original transcript
       const actualSegment = transcript.find(seg => seg.start === segmentStartTime);
       const actualIndex = transcript.indexOf(actualSegment);
-      videoRef.current.currentTime = segmentStartTime;
-      setCurrentSegmentIndex(actualIndex);
+      
+      if (typeof videoRef.current.currentTime === 'number') {
+        videoRef.current.currentTime = segmentStartTime;
+        setCurrentSegmentIndex(actualIndex);
+      } else if (videoRef.current.hasOwnProperty('currentTime')) {
+        // Handle if videoRef.current is our custom component with getter/setters
+        videoRef.current.currentTime = segmentStartTime;
+        setCurrentSegmentIndex(actualIndex);
+      }
     } else {
       // Normal flow when not searching
       const segment = transcript[index];
       if (segment) {
-        videoRef.current.currentTime = segment.start;
-        setCurrentSegmentIndex(index);
+        if (typeof videoRef.current.currentTime === 'number') {
+          videoRef.current.currentTime = segment.start;
+          setCurrentSegmentIndex(index);
+        } else if (videoRef.current.hasOwnProperty('currentTime')) {
+          // Handle if videoRef.current is our custom component with getter/setters
+          videoRef.current.currentTime = segment.start;
+          setCurrentSegmentIndex(index);
+        }
       }
     }
     
     // Reset word position
     setWordHighlightPosition(0);
     
-    videoRef.current.play();
+    // Try to play the video
+    if (typeof videoRef.current.play === 'function') {
+      videoRef.current.play();
+    }
   };
 
   // Format timestamp (seconds) to MM:SS format
@@ -251,6 +240,29 @@ const VideoTranscript = ({ transcript = [], videoRef }) => {
         ))}
       </Box>
     );
+  };
+
+  const handleWordClick = (word, index) => {
+    if (!videoRef.current) return;
+    
+    // Set video time to word start time
+    let video;
+    if (videoRef.current.isCustomPlayer) {
+      // This is our custom VideoPlayer component
+      video = videoRef.current;
+    } else if (videoRef.current instanceof HTMLVideoElement) {
+      // This is a direct video element
+      video = videoRef.current;
+    } else if (videoRef.current.videoElement instanceof HTMLVideoElement) {
+      // Access the video element through the videoElement getter
+      video = videoRef.current.videoElement;
+    }
+    
+    if (!video) return;
+    
+    // Set video time to word start time
+    video.currentTime = word.start;
+    setWordHighlightPosition(index);
   };
 
   if (!transcript || transcript.length === 0) {

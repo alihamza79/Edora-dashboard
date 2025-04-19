@@ -18,6 +18,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoIcon from '@mui/icons-material/Info';
 import CourseChat from '@/app/components/CourseChat';
 import VideoTranscript from '@/app/components/VideoTranscript';
+import VideoPlayer from '@/app/components/VideoPlayer';
 import { generateTranscript } from '@/utils/transcriptService';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
@@ -456,17 +457,12 @@ const CourseDetailsPage = ({ params }) => {
                 {currentContent.fileUrl ? (
                   <Box sx={{ position: 'relative', width: '100%', pt: '56.25%' /* 16:9 Aspect Ratio */ }}>
                     <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-                      <video 
-                        controls 
-                        width="100%" 
-                        height="100%"
-                        src={currentContent.fileUrl}
-                        style={{ objectFit: 'cover' }}
+                      <VideoPlayer 
                         ref={videoRef}
-                        key={currentContent.$id}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
+                        src={currentContent.fileUrl}
+                        title={currentContent.title}
+                        poster={currentContent.thumbnail || course.thumbnail}
+                      />
                     </Box>
                   </Box>
                 ) : (

@@ -12,17 +12,17 @@ import Image from 'next/image';
 
 const demos = [
   {
-    link: 'https://modernize-nextjs.adminmart.com/landingpage',
+    link: 'https://Edora-nextjs.adminmart.com/landingpage',
     img: '/images/landingpage/demos/demo-main.jpg',
     title: 'Main',
   },
   {
-    link: 'https://modernize-nextjs-dark.vercel.app/',
+    link: 'https://Edora-nextjs-dark.vercel.app/',
     img: '/images/landingpage/demos/demo-dark.jpg',
     title: 'Dark',
   },
   {
-    link: 'https://modernize-nextjs-horizontal.vercel.app/',
+    link: 'https://Edora-nextjs-horizontal.vercel.app/',
     img: '/images/landingpage/demos/demo-horizontal.jpg',
     title: 'Horizontal',
   },
@@ -35,27 +35,27 @@ const demos = [
 
 const apps = [
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/calendar',
+    link: 'https://Edora-nextjs.adminmart.com/apps/calendar',
     img: '/images/landingpage/apps/app-calendar.jpg',
     title: 'Calendar',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/chats',
+    link: 'https://Edora-nextjs.adminmart.com/apps/chats',
     img: '/images/landingpage/apps/app-chat.jpg',
     title: 'Chat',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/contacts',
+    link: 'https://Edora-nextjs.adminmart.com/apps/contacts',
     img: '/images/landingpage/apps/app-contact.jpg',
     title: 'Contact',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/email',
+    link: 'https://Edora-nextjs.adminmart.com/apps/email',
     img: '/images/landingpage/apps/app-email.jpg',
     title: 'Email',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/notes',
+    link: 'https://Edora-nextjs.adminmart.com/apps/notes',
     img: '/images/landingpage/apps/app-note.jpg',
     title: 'Note',
   },

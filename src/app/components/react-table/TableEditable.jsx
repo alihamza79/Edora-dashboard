@@ -65,7 +65,7 @@ export const basicsTableData = [
         status: 'pending',
         avatar: '/images/profile/user-6.jpg',
         name: 'Isabel Vasquez',
-        project: 'Modernize admin',
+        project: 'Edora admin',
         percent: 32,
 
     },

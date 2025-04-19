@@ -37,17 +37,17 @@ import Page4 from '/public/images/landingpage/f-pages/page-pricing.jpg';
 
 const demos = [
   {
-    link: 'https://modernize-nextjs.adminmart.com/dashboards/modern',
+    link: 'https://Edora-nextjs.adminmart.com/dashboards/modern',
     img: Demo1,
     title: 'Main',
   },
   {
-    link: 'https://modernize-nextjs-dark.vercel.app/dashboards/ecommerce',
+    link: 'https://Edora-nextjs-dark.vercel.app/dashboards/ecommerce',
     img: Demo2,
     title: 'Dark',
   },
   {
-    link: 'https://modernize-nextjs-horizontal.vercel.app/dashboards/modern',
+    link: 'https://Edora-nextjs-horizontal.vercel.app/dashboards/modern',
     img: Demo3,
     title: 'Horizontal',
   },
@@ -60,22 +60,22 @@ const demos = [
 
 const pages = [
   {
-    link: 'https://modernize-nextjs.adminmart.com/frontend-pages/homepage',
+    link: 'https://Edora-nextjs.adminmart.com/frontend-pages/homepage',
     img: Page1,
     title: 'Homepage',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/frontend-pages/about',
+    link: 'https://Edora-nextjs.adminmart.com/frontend-pages/about',
     img: Page2,
     title: 'About us',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/frontend-pages/portfolio',
+    link: 'https://Edora-nextjs.adminmart.com/frontend-pages/portfolio',
     img: Page3,
     title: 'Portfolio',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/frontend-pages/pricing',
+    link: 'https://Edora-nextjs.adminmart.com/frontend-pages/pricing',
     img: Page4,
     title: 'Pricing',
   },
@@ -83,69 +83,69 @@ const pages = [
 
 const apps = [
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/kanban',
+    link: 'https://Edora-nextjs.adminmart.com/apps/kanban',
     img: App12,
     hot: true,
     title: 'Kanban App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/invoice/list',
+    link: 'https://Edora-nextjs.adminmart.com/apps/invoice/list',
     img: App13,
     hot: true,
     title: 'Invoice App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/calendar',
+    link: 'https://Edora-nextjs.adminmart.com/apps/calendar',
     img: App1,
     title: 'Calendar App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/chats',
+    link: 'https://Edora-nextjs.adminmart.com/apps/chats',
     img: App2,
     title: 'Chat App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/contacts',
+    link: 'https://Edora-nextjs.adminmart.com/apps/contacts',
     img: App3,
     title: 'Contact App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/email',
+    link: 'https://Edora-nextjs.adminmart.com/apps/email',
     img: App4,
     title: 'Email App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/notes',
+    link: 'https://Edora-nextjs.adminmart.com/apps/notes',
     img: App5,
     title: 'Note App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/user-profile/profile',
+    link: 'https://Edora-nextjs.adminmart.com/apps/user-profile/profile',
     img: App6,
     title: 'User Profile App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/blog/post',
+    link: 'https://Edora-nextjs.adminmart.com/apps/blog/post',
     img: App7,
     title: 'Blog App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/tickets',
+    link: 'https://Edora-nextjs.adminmart.com/apps/tickets',
     img: App8,
     title: 'Ticket App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/ecommerce/shop',
+    link: 'https://Edora-nextjs.adminmart.com/apps/ecommerce/shop',
     img: App9,
     title: 'eCommerce Shop App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/ecommerce/checkout',
+    link: 'https://Edora-nextjs.adminmart.com/apps/ecommerce/checkout',
     img: App10,
     title: 'eCommerce Checkout App',
   },
   {
-    link: 'https://modernize-nextjs.adminmart.com/apps/ecommerce/list',
+    link: 'https://Edora-nextjs.adminmart.com/apps/ecommerce/list',
     img: App11,
     title: 'eCommerce List App',
   },

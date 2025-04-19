@@ -6,7 +6,7 @@ const keys = [
     {
         text: 'Founded',
         title: '2019',
-        subtext: 'When we founded Modernize',
+        subtext: 'When we founded Edora',
     },
     {
         text: 'Growth',
@@ -17,13 +17,13 @@ const keys = [
         text: 'Customers',
         title: '300k+',
         isMargin: true,
-        subtext: 'Customers on Modernize',
+        subtext: 'Customers on Edora',
     },
     {
         text: 'Dashboards',
         title: '25k+',
         isMargin: true,
-        subtext: 'Dashboards built using Modernize',
+        subtext: 'Dashboards built using Edora',
     },
 ]
 

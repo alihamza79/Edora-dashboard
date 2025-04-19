@@ -13,49 +13,17 @@ const Logo = () => {
     display: "block",
   }));
 
-  if (customizer.activeDir === "ltr") {
-    return (
-      <LinkStyled href="/">
-        {customizer.activeMode === "dark" ? (
-          <Image
-            src="/images/logos/light-logo.svg"
-            alt="logo"
-            height={customizer.TopbarHeight}
-            width={174}
-            priority
-          />
-        ) : (
-          <Image
-            src={"/images/logos/dark-logo.svg"}
-            alt="logo"
-            height={customizer.TopbarHeight}
-            width={174}
-            priority
-          />
-        )}
-      </LinkStyled>
-    );
-  }
-
+  // Using the new logo for both light and dark modes
   return (
     <LinkStyled href="/">
-      {customizer.activeMode === "dark" ? (
-        <Image
-          src="/images/logos/dark-rtl-logo.svg"
-          alt="logo"
-          height={customizer.TopbarHeight}
-          width={174}
-          priority
-        />
-      ) : (
-        <Image
-          src="/images/logos/light-logo-rtl.svg"
-          alt="logo"
-          height={customizer.TopbarHeight}
-          width={174}
-          priority
-        />
-      )}
+      <Image
+        src="/newlogo.png"
+        alt="logo"
+        height={customizer.TopbarHeight}
+        width={174}
+        priority
+        style={{ objectFit: 'contain' }}
+      />
     </LinkStyled>
   );
 };

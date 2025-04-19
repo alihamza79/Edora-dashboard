@@ -71,7 +71,7 @@ export default function Login() {
         >
           <Box p={4}>
             <AuthLogin
-              title="Welcome to Modernize"
+              title="Welcome to Edora"
               subtext={
                 <Typography variant="subtitle1" color="textSecondary" mb={1}>
                   Your Admin Dashboard
@@ -80,7 +80,7 @@ export default function Login() {
               subtitle={
                 <Stack direction="row" spacing={1} mt={3}>
                   <Typography color="textSecondary" variant="h6" fontWeight="500">
-                    New to Modernize?
+                    New to Edora?
                   </Typography>
                   <Typography
                     component={Link}

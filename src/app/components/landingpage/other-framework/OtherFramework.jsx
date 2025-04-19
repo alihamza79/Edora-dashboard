@@ -18,35 +18,35 @@ const frameworks = [
         color: '#F50D51',
         name: 'Angular',
         img: AngularIcon,
-        link: "https://adminmart.com/product/modernize-angular-material-dashboard/?ref=21"
+        link: "https://adminmart.com/product/Edora-angular-material-dashboard/?ref=21"
     },
     {
         bgcolor: '#E8F6F0',
         color: '#2D9566',
         name: 'VueJs',
         img: VueIcon,
-        link: "https://adminmart.com/product/modernize-vuetify-vue-admin-dashboard/?ref=21"
+        link: "https://adminmart.com/product/Edora-vuetify-vue-admin-dashboard/?ref=21"
     },
     {
         bgcolor: '#F1E7FB',
         color: '#7811F5',
         name: 'Bootstrap',
         img: BootstrapIcon,
-        link: "https://adminmart.com/product/modernize-bootstrap-5-admin-template/?ref=21"
+        link: "https://adminmart.com/product/Edora-bootstrap-5-admin-template/?ref=21"
     },
     {
         bgcolor: '#E3F4FF',
         color: '#2F495E',
         name: '.Net',
         img: NetIcon,
-        link: "https://themeforest.net/item/modernize-aspnet-core-mvc-bootstrap-admin-dashboard-template/49638974"
+        link: "https://themeforest.net/item/Edora-aspnet-core-mvc-bootstrap-admin-dashboard-template/49638974"
     },
     {
         bgcolor: '#EAFBF8',
         color: '#2F495E',
         name: 'Nuxt.js',
         img: NuxtIcon,
-        link: "https://adminmart.com/product/modernize-nuxt-js-admin-dashboard/?ref=21"
+        link: "https://adminmart.com/product/Edora-nuxt-js-admin-dashboard/?ref=21"
     },
 ];
 const OtherFramework = () => {
