@@ -1,0 +1,17 @@
+/* Existing CSS code... */
+
+/* Course view mode - sidebar collapsing */
+body.course-view-mode {
+  --leftpart-width: 0px !important;
+}
+
+.sidebar-collapsed {
+  margin-left: -270px !important;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar-collapsed + .mainContent {
+  width: 100% !important;
+  margin-left: 0 !important;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+} 

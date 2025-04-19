@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Box, Typography, Paper, Chip, Grid, Button, Divider, Stack, CircularProgress, Alert, Card, CardMedia, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Paper, Chip, Grid, Button, Divider, Stack, CircularProgress, Alert, Card, CardMedia, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails, Tabs, Tab } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Client, Databases, Query, ID } from 'appwrite';
@@ -13,6 +13,9 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import InfoIcon from '@mui/icons-material/Info';
 
 const CourseDetailsPage = ({ params }) => {
   const courseId = params.id;
@@ -24,6 +27,9 @@ const CourseDetailsPage = ({ params }) => {
   const [enrollmentStatus, setEnrollmentStatus] = useState('not-enrolled');
   const router = useRouter();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState(0);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [currentContent, setCurrentContent] = useState(null);
 
   useEffect(() => {
     const fetchCourseAndEnrollmentStatus = async () => {
@@ -96,6 +102,10 @@ const CourseDetailsPage = ({ params }) => {
         );
         
         setCourseContent(content.documents);
+        // Set first content as current if user is enrolled
+        if (content.documents.length > 0) {
+          setCurrentContent(content.documents[0]);
+        }
       } catch (error) {
         console.error('Error fetching course content:', error);
         // We don't set an error state here, just log it
@@ -148,10 +158,27 @@ const CourseDetailsPage = ({ params }) => {
     }
   };
 
-  const handleContentClick = (lessonId) => {
+  const handleContentClick = (lesson) => {
     if (enrollmentStatus === 'enrolled') {
-      router.push(`/student/courses/learn/${courseId}/lessons/${lessonId}`);
+      setCurrentContent(lesson);
+      setShowPlayer(true);
+      // Scroll to player
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  const handleGoToCourse = () => {
+    setShowPlayer(true);
+    // Make sure we have a current content selected
+    if (!currentContent && courseContent.length > 0) {
+      setCurrentContent(courseContent[0]);
+    }
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -190,276 +217,435 @@ const CourseDetailsPage = ({ params }) => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Header with Navigation */}
       <Box mb={4} display="flex" alignItems="center">
         <Button 
           startIcon={<ArrowBackIcon />} 
-          onClick={() => router.push('/student/courses')}
+          onClick={() => {
+            if (showPlayer) {
+              setShowPlayer(false);
+            } else {
+              router.push('/student/courses');
+            }
+          }}
           sx={{ mr: 2 }}
         >
-          Back to Courses
+          {showPlayer ? 'Back to Course Details' : 'Back to Courses'}
         </Button>
         <Typography variant="h4" flex={1}>{course.title}</Typography>
       </Box>
 
-      <Grid container spacing={4}>
-        <Grid item xs={12} md={8}>
-          <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Course Overview
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              {course.description}
-            </Typography>
-            
-            <Box sx={{ mt: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Level
-                  </Typography>
-                  <Typography variant="body1">
-                    {course.level ? course.level.charAt(0).toUpperCase() + course.level.slice(1) : 'Not specified'}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Duration
-                  </Typography>
-                  <Typography variant="body1">
-                    {course.duration || 'Not specified'}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Category
-                  </Typography>
-                  <Typography variant="body1">
-                    {course.category || 'Not specified'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Box>
-            
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Tags
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {tags.length > 0 ? (
-                  tags.map((tag, index) => (
-                    <Chip 
-                      key={index} 
-                      label={tag} 
-                      size="small" 
-                      sx={{ m: 0.5 }} 
-                    />
-                  ))
+      {/* Video Player Section - Only shown when enrolled and player is active */}
+      {showPlayer && enrollmentStatus === 'enrolled' && currentContent && (
+        <Box sx={{ mb: 4 }}>
+          <Grid container spacing={2}>
+            {/* Video Player */}
+            <Grid item xs={12} md={8}>
+              <Paper elevation={3} sx={{ p: 0, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+                {currentContent.fileUrl ? (
+                  <Box sx={{ position: 'relative', width: '100%', pt: '56.25%' /* 16:9 Aspect Ratio */ }}>
+                    <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                      <video 
+                        controls 
+                        width="100%" 
+                        height="100%"
+                        src={currentContent.fileUrl}
+                        style={{ objectFit: 'cover' }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </Box>
+                  </Box>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">No tags</Typography>
-                )}
-              </Box>
-            </Box>
-          </Paper>
-          
-          {/* Course Content Section */}
-          <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-            <Box display="flex" alignItems="center" mb={2}>
-              <VideoLibraryIcon sx={{ mr: 1 }} />
-              <Typography variant="h6">
-                Course Content
-              </Typography>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-            
-            {contentLoading ? (
-              <Box display="flex" justifyContent="center" p={3}>
-                <CircularProgress size={30} />
-              </Box>
-            ) : courseContent.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                No content has been added to this course yet.
-              </Typography>
-            ) : (
-              <List>
-                {courseContent.map((lesson, index) => (
-                  <ListItem 
-                    key={lesson.$id}
+                  <Box 
                     sx={{ 
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      mb: 1,
-                      cursor: enrollmentStatus === 'enrolled' ? 'pointer' : 'default',
-                      '&:hover': {
-                        bgcolor: enrollmentStatus === 'enrolled' ? 'action.hover' : 'transparent'
-                      }
+                      height: 400, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      bgcolor: 'grey.900'
                     }}
-                    onClick={() => handleContentClick(lesson.$id)}
                   >
-                    <ListItemIcon>
-                      {enrollmentStatus === 'enrolled' ? (
-                        <PlayCircleOutlineIcon color="primary" />
-                      ) : (
-                        <LockIcon color="action" />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography variant="subtitle1">
-                          {index + 1}. {lesson.title}
-                        </Typography>
-                      }
-                      secondary={
-                        <Box component="span" display="flex" alignItems="center">
-                          <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                          <Typography variant="body2" component="span">
-                            {lesson.duration || 'No duration specified'}
-                          </Typography>
-                          {lesson.description && (
-                            <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                              {lesson.description}
-                            </Typography>
-                          )}
-                        </Box>
-                      }
+                    <Typography variant="h6" color="white">
+                      No video available for this lesson
+                    </Typography>
+                  </Box>
+                )}
+                
+                <Box sx={{ p: 3 }}>
+                  <Typography variant="h5" gutterBottom>
+                    {currentContent.title}
+                  </Typography>
+                  {currentContent.description && (
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                      {currentContent.description}
+                    </Typography>
+                  )}
+                  
+                  <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                    <Chip 
+                      icon={<AccessTimeIcon />} 
+                      label={currentContent.duration || 'No duration specified'} 
+                      size="small" 
+                      variant="outlined"
                     />
-                    <ListItemSecondaryAction>
-                      {enrollmentStatus === 'enrolled' ? (
-                        <Tooltip title="Watch Lesson">
-                          <IconButton edge="end" color="primary">
-                            <PlayCircleOutlineIcon />
-                          </IconButton>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip title="Enroll to unlock">
-                          <IconButton edge="end" disabled>
-                            <LockIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
-              </List>
-            )}
+                    <Chip 
+                      icon={<InfoIcon />} 
+                      label={currentContent.type || 'Video'} 
+                      size="small" 
+                      variant="outlined"
+                      color="primary"
+                    />
+                  </Stack>
+                </Box>
+              </Paper>
+            </Grid>
             
-            {enrollmentStatus !== 'enrolled' && courseContent.length > 0 && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                Enroll in this course to access all {courseContent.length} lessons
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Course Preview
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            
-            {course.thumbnail ? (
-              <Card sx={{ mb: 3 }}>
-                <CardMedia
-                  component="img"
-                  image={course.thumbnail}
-                  alt={course.title}
-                  sx={{ maxHeight: 200, objectFit: 'cover' }}
-                />
-              </Card>
-            ) : (
-              <Card sx={{ mb: 3, bgcolor: 'grey.100', height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  No thumbnail available
-                </Typography>
-              </Card>
-            )}
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Price
-              </Typography>
-              <Typography variant="h5" color="primary" fontWeight="bold">
-                {course.price ? `$${parseFloat(course.price).toFixed(2)}` : 'Free'}
-              </Typography>
-            </Box>
-            
-            <Box sx={{ mb: 3 }}>
-              <Button 
-                variant="contained" 
-                color="primary"
-                size="large"
-                fullWidth
-                startIcon={<SchoolIcon />}
-                onClick={handleEnroll}
-                disabled={enrollmentStatus === 'enrolled' || enrollmentStatus === 'enrolling'}
+            {/* Course Content Sidebar */}
+            <Grid item xs={12} md={4}>
+              <Paper elevation={3} sx={{ 
+                borderRadius: 2, 
+                maxHeight: '600px',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6">Course content</Typography>
+                </Box>
+                
+                {contentLoading ? (
+                  <Box display="flex" justifyContent="center" p={3}>
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : (
+                  <Box sx={{ overflowY: 'auto', flexGrow: 1 }}>
+                    <List disablePadding>
+                      {courseContent.map((lesson, index) => (
+                        <ListItem 
+                          key={lesson.$id}
+                          button
+                          selected={currentContent?.$id === lesson.$id}
+                          onClick={() => handleContentClick(lesson)}
+                          sx={{ 
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            py: 1.5,
+                            backgroundColor: currentContent?.$id === lesson.$id ? 'action.selected' : 'transparent',
+                            '&:hover': {
+                              backgroundColor: 'action.hover'
+                            }
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            {currentContent?.$id === lesson.$id ? (
+                              <PlayCircleOutlineIcon color="primary" />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ width: 24, textAlign: 'center' }}>
+                                {index + 1}
+                              </Typography>
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body1" noWrap>
+                                {lesson.title}
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="text.secondary" display="flex" alignItems="center">
+                                <AccessTimeIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                                {lesson.duration || 'No duration'}
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Course Details Section (shown when player is not active) */}
+      {!showPlayer && (
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={8}>
+            {/* Tabs for different sections */}
+            <Paper elevation={3} sx={{ mb: 4 }}>
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                variant="fullWidth"
+                sx={{ borderBottom: 1, borderColor: 'divider' }}
               >
-                {enrollmentStatus === 'enrolled' ? 'Enrolled' : 
-                 enrollmentStatus === 'enrolling' ? 'Enrolling...' : 'Enroll Now'}
-              </Button>
+                <Tab label="Overview" />
+                <Tab label="Content" />
+              </Tabs>
               
-              {enrollmentStatus === 'enrolled' && (
+              {/* Overview Tab */}
+              {activeTab === 0 && (
+                <Box sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Course Overview
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Typography variant="body1" sx={{ mb: 3 }}>
+                    {course.description}
+                  </Typography>
+                  
+                  <Box sx={{ mt: 3 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Level
+                        </Typography>
+                        <Typography variant="body1">
+                          {course.level ? course.level.charAt(0).toUpperCase() + course.level.slice(1) : 'Not specified'}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Duration
+                        </Typography>
+                        <Typography variant="body1">
+                          {course.duration || 'Not specified'}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Category
+                        </Typography>
+                        <Typography variant="body1">
+                          {course.category || 'Not specified'}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                  
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Tags
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {tags.length > 0 ? (
+                        tags.map((tag, index) => (
+                          <Chip 
+                            key={index} 
+                            label={tag} 
+                            size="small" 
+                            sx={{ m: 0.5 }} 
+                          />
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No tags</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Content Tab */}
+              {activeTab === 1 && (
+                <Box sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <VideoLibraryIcon sx={{ mr: 1 }} />
+                    <Typography variant="h6">
+                      Course Content
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  {contentLoading ? (
+                    <Box display="flex" justifyContent="center" p={3}>
+                      <CircularProgress size={30} />
+                    </Box>
+                  ) : courseContent.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                      No content has been added to this course yet.
+                    </Typography>
+                  ) : (
+                    <Accordion defaultExpanded={true} sx={{ mb: 2 }}>
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        sx={{ bgcolor: 'background.paper' }}
+                      >
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          Section 1: Course Content ({courseContent.length} items)
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 0 }}>
+                        <List disablePadding>
+                          {courseContent.map((lesson, index) => (
+                            <ListItem 
+                              key={lesson.$id}
+                              sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                                cursor: enrollmentStatus === 'enrolled' ? 'pointer' : 'default',
+                                '&:hover': {
+                                  bgcolor: enrollmentStatus === 'enrolled' ? 'action.hover' : 'transparent'
+                                }
+                              }}
+                              onClick={() => handleContentClick(lesson)}
+                            >
+                              <ListItemIcon>
+                                {enrollmentStatus === 'enrolled' ? (
+                                  <PlayCircleOutlineIcon color="primary" />
+                                ) : (
+                                  <LockIcon color="action" />
+                                )}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={
+                                  <Typography variant="subtitle1">
+                                    {index + 1}. {lesson.title}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box component="span" display="flex" alignItems="center">
+                                    <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                                    <Typography variant="body2" component="span">
+                                      {lesson.duration || 'No duration specified'}
+                                    </Typography>
+                                    {lesson.description && (
+                                      <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                        {lesson.description}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                }
+                              />
+                              <ListItemSecondaryAction>
+                                {enrollmentStatus === 'enrolled' ? (
+                                  <Tooltip title="Watch Lesson">
+                                    <IconButton edge="end" color="primary">
+                                      <PlayCircleOutlineIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip title="Enroll to unlock">
+                                    <IconButton edge="end" disabled>
+                                      <LockIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                              </ListItemSecondaryAction>
+                            </ListItem>
+                          ))}
+                        </List>
+                      </AccordionDetails>
+                    </Accordion>
+                  )}
+                  
+                  {enrollmentStatus !== 'enrolled' && courseContent.length > 0 && (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                      Enroll in this course to access all {courseContent.length} lessons
+                    </Alert>
+                  )}
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Course Preview
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              
+              {course.thumbnail ? (
+                <Card sx={{ mb: 3 }}>
+                  <CardMedia
+                    component="img"
+                    image={course.thumbnail}
+                    alt={course.title}
+                    sx={{ maxHeight: 200, objectFit: 'cover' }}
+                  />
+                </Card>
+              ) : (
+                <Card sx={{ mb: 3, bgcolor: 'grey.100', height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No thumbnail available
+                  </Typography>
+                </Card>
+              )}
+              
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Price
+                </Typography>
+                <Typography variant="h5" color="primary" fontWeight="bold">
+                  {course.price ? `$${parseFloat(course.price).toFixed(2)}` : 'Free'}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mb: 3 }}>
                 <Button 
-                  variant="outlined" 
+                  variant="contained" 
                   color="primary"
                   size="large"
                   fullWidth
-                  sx={{ mt: 2 }}
-                  onClick={() => router.push(`/student/courses/learn/${courseId}`)}
+                  startIcon={<SchoolIcon />}
+                  onClick={enrollmentStatus === 'enrolled' ? handleGoToCourse : handleEnroll}
+                  disabled={enrollmentStatus === 'enrolling'}
                 >
-                  Go to Course
+                  {enrollmentStatus === 'enrolled' ? 'Go to Course' : 
+                   enrollmentStatus === 'enrolling' ? 'Enrolling...' : 'Enroll Now'}
                 </Button>
-              )}
-            </Box>
+              </Box>
+              
+              {/* Course Stats */}
+              <Box sx={{ mb: 3 }}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Course Content
+                </Typography>
+                <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Lessons
+                    </Typography>
+                    <Typography variant="h6" fontWeight="medium">
+                      {courseContent.length}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Duration
+                    </Typography>
+                    <Typography variant="h6" fontWeight="medium">
+                      {course.duration || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+            </Paper>
             
-            {/* Course Stats */}
-            <Box sx={{ mb: 3 }}>
-              <Divider sx={{ my: 2 }} />
+            <Paper elevation={3} sx={{ p: 3 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Course Content
+                Created By
               </Typography>
-              <Stack direction="row" spacing={3} sx={{ mb: 1 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Lessons
-                  </Typography>
-                  <Typography variant="h6" fontWeight="medium">
-                    {courseContent.length}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Duration
-                  </Typography>
-                  <Typography variant="h6" fontWeight="medium">
-                    {course.duration || 'N/A'}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Box>
-          </Paper>
-          
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Created By
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {course.tutorName || 'Course Instructor'}
-            </Typography>
-            
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Created On
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {formattedDate}
-            </Typography>
-          </Paper>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                {course.tutorName || 'Course Instructor'}
+              </Typography>
+              
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Created On
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {formattedDate}
+              </Typography>
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
+      )}
     </Box>
   );
 };

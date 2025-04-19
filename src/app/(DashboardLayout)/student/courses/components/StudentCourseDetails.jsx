@@ -18,6 +18,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  LinearProgress,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SchoolIcon from '@mui/icons-material/School';
@@ -29,12 +30,18 @@ import { collections } from '@/appwrite/collections';
 import { projectID, databaseId } from '@/appwrite/config';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ArticleIcon from '@mui/icons-material/Article';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const StudentCourseDetails = ({ courseId }) => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [enrollmentStatus, setEnrollmentStatus] = useState('not-enrolled'); // 'not-enrolled', 'enrolled', 'enrolling'
+  const [sections, setSections] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [completedLessons, setCompletedLessons] = useState([]);
   const router = useRouter();
   const { user } = useAuth();
 
@@ -58,6 +65,25 @@ const StudentCourseDetails = ({ courseId }) => {
         
         setCourse(courseData);
         
+        // Fetch tutor details if tutorId is available
+        if (courseData.tutorId) {
+          try {
+            const tutorData = await databases.getDocument(
+              databaseId,
+              collections.users,
+              courseData.tutorId
+            );
+            
+            // Add tutor info to course data
+            setCourse(prev => ({
+              ...prev,
+              tutorName: tutorData.name || tutorData.email || 'Unknown Instructor'
+            }));
+          } catch (error) {
+            console.error('Error fetching tutor details:', error);
+          }
+        }
+        
         if (user && user.$id) {
           // Check if user is already enrolled
           try {
@@ -72,6 +98,47 @@ const StudentCourseDetails = ({ courseId }) => {
             
             if (enrollments.documents.length > 0) {
               setEnrollmentStatus('enrolled');
+              
+              // Fetch course sections and lessons data
+              try {
+                const sectionsData = await databases.listDocuments(
+                  databaseId,
+                  collections.courseSections,
+                  [
+                    Query.equal('courseId', courseId),
+                    Query.orderAsc('order')
+                  ]
+                );
+                
+                setSections(sectionsData.documents);
+                
+                const lessonsData = await databases.listDocuments(
+                  databaseId,
+                  collections.lessons,
+                  [
+                    Query.equal('courseId', courseId),
+                    Query.orderAsc('sectionOrder'),
+                    Query.orderAsc('order')
+                  ]
+                );
+                
+                setLessons(lessonsData.documents);
+                
+                // Fetch completed lessons
+                const progressData = await databases.listDocuments(
+                  databaseId,
+                  collections.lessonProgress,
+                  [
+                    Query.equal('userId', user.$id),
+                    Query.equal('courseId', courseId),
+                    Query.equal('completed', true)
+                  ]
+                );
+                
+                setCompletedLessons(progressData.documents);
+              } catch (err) {
+                console.error('Error fetching course content:', err);
+              }
             } else {
               setEnrollmentStatus('not-enrolled');
             }
@@ -129,6 +196,11 @@ const StudentCourseDetails = ({ courseId }) => {
       setEnrollmentStatus('not-enrolled');
     }
   };
+
+  // Calculate progress
+  const progress = lessons.length > 0 
+    ? Math.round((completedLessons.length / lessons.length) * 100) 
+    : 0;
 
   if (loading) {
     return (
@@ -194,6 +266,18 @@ const StudentCourseDetails = ({ courseId }) => {
 
               <Grid item xs={12}>
                 <List>
+                  {course.tutorName && (
+                    <ListItem>
+                      <ListItemIcon>
+                        <SchoolIcon />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Instructor" 
+                        secondary={course.tutorName} 
+                      />
+                    </ListItem>
+                  )}
+                  
                   <ListItem>
                     <ListItemIcon>
                       <SignalCellularAltIcon />
@@ -247,6 +331,107 @@ const StudentCourseDetails = ({ courseId }) => {
               </Grid>
             </Grid>
           </Paper>
+          
+          <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Course Content
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            
+            {enrollmentStatus === 'enrolled' && (
+              <Box sx={{ mb: 3 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                  <Typography variant="body2" color="text.secondary">
+                    Your progress
+                  </Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {progress}%
+                  </Typography>
+                </Box>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={progress} 
+                  sx={{ 
+                    height: 8, 
+                    borderRadius: 5,
+                    backgroundColor: 'rgba(0,0,0,0.1)',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 5,
+                    }
+                  }} 
+                />
+              </Box>
+            )}
+            
+            {/* Course Content Preview */}
+            <Box>
+              {loading ? (
+                <Box display="flex" justifyContent="center" py={3}>
+                  <CircularProgress size={30} />
+                </Box>
+              ) : (
+                <List>
+                  {sections.length > 0 ? (
+                    sections.map((section, index) => (
+                      <Box key={section.$id || index} sx={{ mb: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2, mb: 1 }}>
+                          {section.title || `Section ${index + 1}`}
+                        </Typography>
+                        
+                        <List disablePadding>
+                          {lessons
+                            .filter(lesson => lesson.sectionId === section.$id)
+                            .map((lesson, lessonIndex) => {
+                              const isCompleted = completedLessons.some(
+                                progress => progress.lessonId === lesson.$id
+                              );
+                              
+                              return (
+                                <ListItem 
+                                  key={lesson.$id || lessonIndex} 
+                                  sx={{ 
+                                    py: 0.5,
+                                    pl: 1,
+                                    borderLeft: isCompleted ? '3px solid #4caf50' : 'none',
+                                  }}
+                                >
+                                  <ListItemIcon sx={{ minWidth: 36 }}>
+                                    {isCompleted ? (
+                                      <CheckCircleIcon fontSize="small" color="success" />
+                                    ) : (
+                                      lesson.type === 'video' ? (
+                                        <PlayArrowIcon fontSize="small" color="primary" />
+                                      ) : (
+                                        <ArticleIcon fontSize="small" color="primary" />
+                                      )
+                                    )}
+                                  </ListItemIcon>
+                                  <ListItemText 
+                                    primary={lesson.title} 
+                                    secondary={lesson.duration}
+                                    primaryTypographyProps={{ 
+                                      variant: 'body2',
+                                      sx: isCompleted ? { textDecoration: 'line-through', color: 'text.secondary' } : {}
+                                    }}
+                                    secondaryTypographyProps={{ variant: 'caption' }}
+                                  />
+                                </ListItem>
+                              );
+                            })}
+                        </List>
+                      </Box>
+                    ))
+                  ) : (
+                    <Box py={2}>
+                      <Typography variant="body2" color="text.secondary" align="center">
+                        No content sections available yet.
+                      </Typography>
+                    </Box>
+                  )}
+                </List>
+              )}
+            </Box>
+          </Paper>
         </Grid>
         
         <Grid item xs={12} md={4}>
@@ -283,6 +468,50 @@ const StudentCourseDetails = ({ courseId }) => {
             </Box>
             
             <Box sx={{ mb: 3 }}>
+              {enrollmentStatus === 'enrolled' && (
+                <Box mb={2}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Your Progress
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ position: 'relative', display: 'inline-flex', mr: 2 }}>
+                      <CircularProgress
+                        variant="determinate"
+                        value={progress}
+                        size={60}
+                        thickness={5}
+                        sx={{
+                          circle: {
+                            strokeLinecap: 'round',
+                          }
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          top: 0,
+                          left: 0,
+                          bottom: 0,
+                          right: 0,
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Typography variant="caption" fontWeight="bold">
+                          {progress}%
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2">
+                        {completedLessons.length} of {lessons.length} lessons completed
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              
               <Button 
                 variant="contained" 
                 color="primary"
