@@ -16,6 +16,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoIcon from '@mui/icons-material/Info';
+import CourseChat from '@/app/components/CourseChat';
 
 const CourseDetailsPage = ({ params }) => {
   const courseId = params.id;
@@ -321,7 +322,7 @@ const CourseDetailsPage = ({ params }) => {
           <Grid container spacing={2}>
             {/* Video Player */}
             <Grid item xs={12} md={8}>
-              <Paper elevation={3} sx={{ p: 0, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+              <Paper elevation={3} sx={{ p: 0, borderRadius: 2, overflow: 'hidden', position: 'relative', mb: 2 }}>
                 {currentContent.fileUrl ? (
                   <Box sx={{ position: 'relative', width: '100%', pt: '56.25%' /* 16:9 Aspect Ratio */ }}>
                     <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
@@ -392,6 +393,11 @@ const CourseDetailsPage = ({ params }) => {
                   </Stack>
                 </Box>
               </Paper>
+              
+              {/* Chat Component */}
+              <Box sx={{ mt: 3 }}>
+                <CourseChat courseId={courseId} />
+              </Box>
             </Grid>
             
             {/* Course Content Sidebar */}
