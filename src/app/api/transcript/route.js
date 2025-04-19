@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { Client, Databases, ID } from 'appwrite';
 import { projectID, databaseId } from '@/appwrite/config';
 import { collections } from '@/appwrite/collections';
-import fetch from 'node-fetch';
-import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 import { pipeline } from 'stream/promises';
@@ -38,7 +36,9 @@ export async function POST(req) {
       }
       
       const fileStream = fs.createWriteStream(videoFilePath);
-      await pipeline(response.body, fileStream);
+      const blob = await response.blob();
+      const buffer = Buffer.from(await blob.arrayBuffer());
+      fs.writeFileSync(videoFilePath, buffer);
       console.log(`Video downloaded to ${videoFilePath}`);
     } catch (error) {
       console.error('Error downloading video:', error);
@@ -53,7 +53,9 @@ export async function POST(req) {
     let transcriptData;
     try {
       const formData = new FormData();
-      formData.append('file', fs.createReadStream(videoFilePath));
+      const fileBuffer = fs.readFileSync(videoFilePath);
+      const file = new Blob([fileBuffer]);
+      formData.append('file', file, 'audio.mp4');
       formData.append('model', 'whisper-1');
       formData.append('response_format', 'verbose_json');
       formData.append('timestamp_granularities', ['segment']);
