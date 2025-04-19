@@ -11,6 +11,49 @@ const publicRoutes = [
   '/auth/auth1/forgot-password',
 ];
 
+// List of allowed routes/directories
+const allowedRoutes = [
+  '/student',
+  '/courses',
+  '/dashboard',
+  '/teacher',
+  // Include auth routes as they're needed for login
+  '/auth',
+  // Include API routes for functionality
+  '/api',
+  // Include root page
+  '/'
+];
+
+// Explicitly restricted paths from the template that should be redirected
+const explicitlyRestrictedPaths = [
+  '/apps',
+  '/ui-components',
+  '/theme-pages',
+  '/tables',
+  '/sample-page',
+  '/react-tables',
+  '/charts',
+  '/dashboards',
+  '/forms',
+  '/icons',
+  '/widgets'
+];
+
+// Function to check if a path is allowed
+const isPathAllowed = (path) => {
+  // Always allow public routes
+  if (publicRoutes.includes(path)) return true;
+  
+  // Check if path is explicitly restricted
+  if (explicitlyRestrictedPaths.some(restrictedPath => path.startsWith(restrictedPath))) {
+    return false;
+  }
+  
+  // Check if the path starts with any of the allowed routes
+  return allowedRoutes.some(route => path.startsWith(route));
+};
+
 export function AuthMiddleware({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -26,6 +69,10 @@ export function AuthMiddleware({ children }) {
         router.push('/auth/auth1/login');
       } else if (isAuthenticated && isPublicRoute) {
         // Already authenticated but trying to access auth pages
+        const userType = localStorage.getItem('userType') || 'student';
+        router.push(userType === 'tutor' ? '/dashboard/tutor' : '/dashboard/student');
+      } else if (isAuthenticated && !isPathAllowed(pathname)) {
+        // Path is not in the allowed list, redirect to dashboard
         const userType = localStorage.getItem('userType') || 'student';
         router.push(userType === 'tutor' ? '/dashboard/tutor' : '/dashboard/student');
       }
@@ -45,6 +92,7 @@ export function AuthMiddleware({ children }) {
 
 export function RoleMiddleware({ children, allowedRoles = [] }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,11 +111,16 @@ export function RoleMiddleware({ children, allowedRoles = [] }) {
         router.push(userType === 'tutor' ? '/dashboard/tutor' : '/dashboard/student');
       }
       
+      // Check if the path is allowed
+      if (!isPathAllowed(pathname)) {
+        router.push(userType === 'tutor' ? '/dashboard/tutor' : '/dashboard/student');
+      }
+      
       setLoading(false);
     };
 
     checkRole();
-  }, [router, allowedRoles]);
+  }, [router, allowedRoles, pathname]);
 
   if (loading) {
     return <div>Loading...</div>;
