@@ -12,12 +12,14 @@ import {
   Divider,
   IconButton,
   Tooltip,
+  Stack,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import PeopleIcon from '@mui/icons-material/People';
+import ChatIcon from '@mui/icons-material/Chat';
 import Link from 'next/link';
 
 const CourseCard = ({ course }) => {
@@ -28,13 +30,6 @@ const CourseCard = ({ course }) => {
 
   // Format price
   const formattedPrice = course.price ? `$${parseFloat(course.price).toFixed(2)}` : 'Free';
-
-  // Format date
-  const formattedDate = new Date(course.$createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 
   // Get enrollment count
   const enrollmentCount = course.enrollmentCount || 0;
@@ -71,16 +66,13 @@ const CourseCard = ({ course }) => {
         <Typography gutterBottom variant="h5" component="div" noWrap>
           {course.title}
         </Typography>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+        <Box display="flex" alignItems="center" mb={1}>
           <Chip 
             label={formattedPrice} 
             color={course.price ? "primary" : "success"} 
             size="small" 
             variant="outlined"
           />
-          <Typography variant="caption" color="text.secondary">
-            Created: {formattedDate}
-          </Typography>
         </Box>
         <Typography 
           variant="body2" 
@@ -146,17 +138,30 @@ const CourseCard = ({ course }) => {
       </CardActions>
       <Divider />
       <Box px={2} py={1}>
-        <Link href={`/courses/content/${course.$id}`} passHref>
-          <Button 
-            variant="contained" 
-            size="small" 
-            fullWidth
-            startIcon={<VideoLibraryIcon />}
-            color="primary"
-          >
-            Manage Content
-          </Button>
-        </Link>
+        <Stack direction="row" spacing={1}>
+          <Link href={`/courses/content/${course.$id}`} passHref style={{ width: '100%' }}>
+            <Button 
+              variant="contained" 
+              size="small" 
+              fullWidth
+              startIcon={<VideoLibraryIcon />}
+              color="primary"
+            >
+              Manage Content
+            </Button>
+          </Link>
+          <Link href={`/courses/chat/${course.$id}`} passHref style={{ width: '100%' }}>
+            <Button 
+              variant="outlined" 
+              size="small" 
+              fullWidth
+              startIcon={<ChatIcon />}
+              color="secondary"
+            >
+              Chat
+            </Button>
+          </Link>
+        </Stack>
       </Box>
     </Card>
   );
