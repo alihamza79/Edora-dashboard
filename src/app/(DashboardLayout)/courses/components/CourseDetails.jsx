@@ -130,7 +130,7 @@ const CourseDetails = ({ courseId }) => {
         >
           Back to Courses
         </Button>
-        <Typography variant="h4" flex={1}>{course.title}</Typography>
+        <Typography variant="h4" flex={1} color="error">{course.title}</Typography>
         <Link href={`/courses/edit/${courseId}`} passHref>
           <Button
             variant="outlined"

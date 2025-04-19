@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Box, Typography, Paper, Chip, Grid, Button, Divider, Stack, CircularProgress, Alert, Card, CardMedia, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Paper, Chip, Grid, Button, Divider, Stack, CircularProgress, Alert, Card, CardMedia, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Tooltip, Accordion, AccordionSummary, AccordionDetails, Tabs, Tab, Checkbox, LinearProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Client, Databases, Query, ID } from 'appwrite';
@@ -30,6 +30,10 @@ const CourseDetailsPage = ({ params }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [showPlayer, setShowPlayer] = useState(false);
   const [currentContent, setCurrentContent] = useState(null);
+  const [completedLessons, setCompletedLessons] = useState({});
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [enrollmentId, setEnrollmentId] = useState(null);
+  const [savingProgress, setSavingProgress] = useState(false);
 
   useEffect(() => {
     const fetchCourseAndEnrollmentStatus = async () => {
@@ -64,7 +68,20 @@ const CourseDetailsPage = ({ params }) => {
             );
             
             if (enrollments.documents.length > 0) {
+              const enrollment = enrollments.documents[0];
               setEnrollmentStatus('enrolled');
+              setEnrollmentId(enrollment.$id);
+              
+              // Load completed lessons from enrollment
+              if (enrollment.completedLessons) {
+                try {
+                  const completed = JSON.parse(enrollment.completedLessons);
+                  setCompletedLessons(completed);
+                } catch (e) {
+                  console.error('Error parsing completed lessons:', e);
+                  setCompletedLessons({});
+                }
+              }
             } else {
               setEnrollmentStatus('not-enrolled');
             }
@@ -121,6 +138,15 @@ const CourseDetailsPage = ({ params }) => {
     }
   }, [courseId, user]);
 
+  // Calculate progress percentage whenever completedLessons or courseContent changes
+  useEffect(() => {
+    if (courseContent.length > 0) {
+      const completedCount = Object.values(completedLessons).filter(value => value).length;
+      const percent = Math.round((completedCount / courseContent.length) * 100);
+      setProgressPercent(percent);
+    }
+  }, [completedLessons, courseContent]);
+
   const handleEnroll = async () => {
     if (!user || !user.$id) {
       setError('You need to be logged in to enroll in courses');
@@ -138,7 +164,7 @@ const CourseDetailsPage = ({ params }) => {
       const databases = new Databases(client);
       
       // Create enrollment record
-      await databases.createDocument(
+      const enrollment = await databases.createDocument(
         databaseId,
         collections.enrollments,
         ID.unique(),
@@ -146,15 +172,69 @@ const CourseDetailsPage = ({ params }) => {
           userId: user.$id,
           courseId: courseId,
           enrolledAt: new Date().toISOString(),
-          status: 'active'
+          status: 'active',
+          completedLessons: JSON.stringify({}),
+          progress: 0
         }
       );
       
       setEnrollmentStatus('enrolled');
+      setEnrollmentId(enrollment.$id);
     } catch (error) {
       console.error('Error enrolling in course:', error);
       setError('Failed to enroll in course. Please try again later.');
       setEnrollmentStatus('not-enrolled');
+    }
+  };
+
+  const handleLessonCheckbox = async (lessonId, isCompleted) => {
+    if (!enrollmentId) return;
+    
+    setSavingProgress(true);
+    
+    // Update local state first
+    const updatedCompletedLessons = {
+      ...completedLessons,
+      [lessonId]: isCompleted
+    };
+    
+    setCompletedLessons(updatedCompletedLessons);
+    
+    try {
+      // Update in database
+      const client = new Client();
+      client
+        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+        .setProject(projectID);
+
+      const databases = new Databases(client);
+      
+      // Calculate progress percentage
+      const completedCount = Object.values(updatedCompletedLessons).filter(value => value).length;
+      const progressValue = Math.round((completedCount / courseContent.length) * 100);
+      
+      // Show saving feedback to user
+      console.log(`Saving progress: ${progressValue}% complete`);
+      
+      await databases.updateDocument(
+        databaseId,
+        collections.enrollments,
+        enrollmentId,
+        {
+          completedLessons: JSON.stringify(updatedCompletedLessons),
+          progress: progressValue,
+          lastUpdated: new Date().toISOString()
+        }
+      );
+      
+      // Feedback that progress was saved
+      console.log('Course progress saved successfully');
+    } catch (error) {
+      console.error('Error updating lesson progress:', error);
+      // Revert to previous state on error
+      setCompletedLessons(completedLessons);
+    } finally {
+      setSavingProgress(false);
     }
   };
 
@@ -296,6 +376,19 @@ const CourseDetailsPage = ({ params }) => {
                       variant="outlined"
                       color="primary"
                     />
+                    
+                    {/* Lesson completion checkbox */}
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Checkbox
+                        checked={!!completedLessons[currentContent.$id]}
+                        onChange={(e) => handleLessonCheckbox(currentContent.$id, e.target.checked)}
+                        color="success"
+                        disabled={savingProgress}
+                      />
+                      <Typography variant="body2" color={completedLessons[currentContent.$id] ? "success.main" : "text.secondary"}>
+                        {completedLessons[currentContent.$id] ? "Completed" : "Mark as completed"}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </Box>
               </Paper>
@@ -309,6 +402,18 @@ const CourseDetailsPage = ({ params }) => {
                 display: 'flex',
                 flexDirection: 'column'
               }}>
+                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6">Course progress</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <Box sx={{ width: '100%', mr: 1 }}>
+                      <LinearProgress variant="determinate" value={progressPercent} sx={{ height: 8, borderRadius: 5 }} />
+                    </Box>
+                    <Box sx={{ minWidth: 35 }}>
+                      <Typography variant="body2" color="text.secondary">{`${progressPercent}%`}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+                
                 <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
                   <Typography variant="h6">Course content</Typography>
                 </Box>
@@ -329,13 +434,25 @@ const CourseDetailsPage = ({ params }) => {
                           sx={{ 
                             borderBottom: '1px solid',
                             borderColor: 'divider',
-                            py: 1.5,
+                            py: 1,
+                            px: 1.5,
                             backgroundColor: currentContent?.$id === lesson.$id ? 'action.selected' : 'transparent',
                             '&:hover': {
                               backgroundColor: 'action.hover'
                             }
                           }}
                         >
+                          <Checkbox
+                            edge="start"
+                            checked={!!completedLessons[lesson.$id]}
+                            onChange={(e) => {
+                              e.stopPropagation(); // Prevent triggering the ListItem click
+                              handleLessonCheckbox(lesson.$id, e.target.checked);
+                            }}
+                            color="success"
+                            disabled={savingProgress}
+                            sx={{ p: 0, mr: 1 }}
+                          />
                           <ListItemIcon sx={{ minWidth: 36 }}>
                             {currentContent?.$id === lesson.$id ? (
                               <PlayCircleOutlineIcon color="primary" />
@@ -347,7 +464,15 @@ const CourseDetailsPage = ({ params }) => {
                           </ListItemIcon>
                           <ListItemText
                             primary={
-                              <Typography variant="body1" noWrap>
+                              <Typography 
+                                variant="body1" 
+                                noWrap
+                                sx={{ 
+                                  color: completedLessons[lesson.$id] ? 'success.main' : 'inherit',
+                                  textDecoration: completedLessons[lesson.$id] ? 'line-through' : 'none',
+                                  opacity: completedLessons[lesson.$id] ? 0.8 : 1
+                                }}
+                              >
                                 {lesson.title}
                               </Typography>
                             }
@@ -461,6 +586,20 @@ const CourseDetailsPage = ({ params }) => {
                   </Box>
                   <Divider sx={{ mb: 2 }} />
                   
+                  {enrollmentStatus === 'enrolled' && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" gutterBottom>Your Progress</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ width: '100%', mr: 1 }}>
+                          <LinearProgress variant="determinate" value={progressPercent} sx={{ height: 10, borderRadius: 5 }} />
+                        </Box>
+                        <Box sx={{ minWidth: 35 }}>
+                          <Typography variant="body2" color="text.secondary">{`${progressPercent}%`}</Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  )}
+                  
                   {contentLoading ? (
                     <Box display="flex" justifyContent="center" p={3}>
                       <CircularProgress size={30} />
@@ -488,22 +627,47 @@ const CourseDetailsPage = ({ params }) => {
                                 borderBottom: '1px solid',
                                 borderColor: 'divider',
                                 cursor: enrollmentStatus === 'enrolled' ? 'pointer' : 'default',
+                                p: 1.5,
                                 '&:hover': {
                                   bgcolor: enrollmentStatus === 'enrolled' ? 'action.hover' : 'transparent'
                                 }
                               }}
                               onClick={() => handleContentClick(lesson)}
                             >
+                              {enrollmentStatus === 'enrolled' && (
+                                <Checkbox
+                                  edge="start"
+                                  checked={!!completedLessons[lesson.$id]}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    handleLessonCheckbox(lesson.$id, e.target.checked);
+                                  }}
+                                  color="success"
+                                  disabled={savingProgress}
+                                  sx={{ p: 0, mr: 1 }}
+                                />
+                              )}
                               <ListItemIcon>
                                 {enrollmentStatus === 'enrolled' ? (
-                                  <PlayCircleOutlineIcon color="primary" />
+                                  completedLessons[lesson.$id] ? (
+                                    <CheckCircleIcon color="success" />
+                                  ) : (
+                                    <PlayCircleOutlineIcon color="primary" />
+                                  )
                                 ) : (
                                   <LockIcon color="action" />
                                 )}
                               </ListItemIcon>
                               <ListItemText
                                 primary={
-                                  <Typography variant="subtitle1">
+                                  <Typography 
+                                    variant="subtitle1"
+                                    sx={{ 
+                                      color: completedLessons[lesson.$id] ? 'success.main' : 'inherit',
+                                      textDecoration: completedLessons[lesson.$id] ? 'line-through' : 'none',
+                                      opacity: completedLessons[lesson.$id] ? 0.8 : 1
+                                    }}
+                                  >
                                     {index + 1}. {lesson.title}
                                   </Typography>
                                 }
@@ -585,6 +749,25 @@ const CourseDetailsPage = ({ params }) => {
                   {course.price ? `$${parseFloat(course.price).toFixed(2)}` : 'Free'}
                 </Typography>
               </Box>
+              
+              {enrollmentStatus === 'enrolled' && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Your Progress
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Box sx={{ width: '100%', mr: 1 }}>
+                      <LinearProgress variant="determinate" value={progressPercent} sx={{ height: 8, borderRadius: 5 }} />
+                    </Box>
+                    <Box sx={{ minWidth: 35 }}>
+                      <Typography variant="body2" color="text.secondary">{`${progressPercent}%`}</Typography>
+                    </Box>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {Object.values(completedLessons).filter(v => v).length} of {courseContent.length} lessons completed
+                  </Typography>
+                </Box>
+              )}
               
               <Box sx={{ mb: 3 }}>
                 <Button 
