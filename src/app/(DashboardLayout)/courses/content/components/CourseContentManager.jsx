@@ -55,29 +55,14 @@ import { useAuth } from '@/app/context/AuthContext';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import storageServices from '@/appwrite/Services/storageServices';
 
-// TabPanel component for the Tabs
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`course-content-tabpanel-${index}`}
-      aria-labelledby={`course-content-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
 const CourseContentManager = ({ courseId }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
   const [contentItems, setContentItems] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -90,7 +75,6 @@ const CourseContentManager = ({ courseId }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
   const [editingContentId, setEditingContentId] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [expandedItems, setExpandedItems] = useState({});
@@ -148,11 +132,6 @@ const CourseContentManager = ({ courseId }) => {
     }
   }, [courseId]);
 
-  // Handle tab change
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
-
   // Open the add/edit content dialog
   const handleOpenDialog = (contentItem = null) => {
     if (contentItem) {
@@ -160,13 +139,12 @@ const CourseContentManager = ({ courseId }) => {
       setFormData({
         title: contentItem.title || '',
         description: contentItem.description || '',
-        type: contentItem.type || 'video',
+        type: 'video',
         fileUrl: contentItem.fileUrl || '',
         duration: contentItem.duration || '',
-        sequence: contentItem.sequence || 0,
       });
       setEditingContentId(contentItem.$id);
-      if (contentItem.fileUrl && (contentItem.type === 'video' || contentItem.type === 'document')) {
+      if (contentItem.fileUrl) {
         setPreviewUrl(contentItem.fileUrl);
       }
     } else {
@@ -177,7 +155,6 @@ const CourseContentManager = ({ courseId }) => {
         type: 'video',
         fileUrl: '',
         duration: '',
-        sequence: contentItems.length > 0 ? contentItems[contentItems.length - 1].sequence + 1 : 1,
       });
       setEditingContentId(null);
       setPreviewUrl('');
@@ -274,10 +251,9 @@ const CourseContentManager = ({ courseId }) => {
         courseId: courseId,
         title: formData.title,
         description: formData.description,
-        type: formData.type,
+        type: 'video',
         fileUrl: fileUrl,
         duration: formData.duration,
-        sequence: formData.sequence,
         createdBy: user.$id,
       };
 
@@ -301,6 +277,13 @@ const CourseContentManager = ({ courseId }) => {
           )
         );
       } else {
+        // Automatically assign the next sequence number for new content
+        const nextSequence = contentItems.length > 0 
+          ? Math.max(...contentItems.map(item => item.sequence || 0)) + 1 
+          : 1;
+        
+        contentData.sequence = nextSequence;
+        
         // Create new content
         const newContent = await databases.createDocument(
           databaseId,
@@ -324,34 +307,45 @@ const CourseContentManager = ({ courseId }) => {
     }
   };
 
-  // Delete content item
-  const handleDeleteContent = async (contentId) => {
-    if (window.confirm('Are you sure you want to delete this content? This action cannot be undone.')) {
-      try {
-        setLoading(true);
-        
-        const client = new Client();
-        client
-          .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
-          .setProject(projectID);
+  // Open delete confirmation dialog
+  const handleOpenDeleteDialog = (contentId) => {
+    setContentToDelete(contentId);
+    setOpenDeleteDialog(true);
+  };
 
-        const databases = new Databases(client);
-        
-        await databases.deleteDocument(
-          databaseId,
-          collections.courseContents,
-          contentId
-        );
-        
-        // Remove from the content items list
-        setContentItems(prev => prev.filter(item => item.$id !== contentId));
-        setSuccess('Content deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting content:', error);
-        setError(`Failed to delete content: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
+  // Close delete confirmation dialog
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+    setContentToDelete(null);
+  };
+
+  // Delete content item
+  const handleDeleteContent = async () => {
+    try {
+      setLoading(true);
+      
+      const client = new Client();
+      client
+        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+        .setProject(projectID);
+
+      const databases = new Databases(client);
+      
+      await databases.deleteDocument(
+        databaseId,
+        collections.courseContents,
+        contentToDelete
+      );
+      
+      // Remove from the content items list
+      setContentItems(prev => prev.filter(item => item.$id !== contentToDelete));
+      setSuccess('Content deleted successfully!');
+      handleCloseDeleteDialog();
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      setError(`Failed to delete content: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -544,438 +538,167 @@ const CourseContentManager = ({ courseId }) => {
         </Alert>
       )}
 
-      <Box mb={4}>
-        <Typography variant="h4" gutterBottom>
-          {course?.title} - Content Management
+      <Box mb={4} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4">
+          {course?.title}
         </Typography>
-        <Typography variant="body1" color="textSecondary">
-          Add, edit, and organize content for your course
-        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog()}
+        >
+          Add New Video
+        </Button>
       </Box>
 
       <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="course content tabs">
-            <Tab label="All Content" id="course-content-tab-0" />
-            <Tab label="Videos" id="course-content-tab-1" />
-            <Tab label="Documents" id="course-content-tab-2" />
-            <Tab label="Links" id="course-content-tab-3" />
-          </Tabs>
-        </Box>
-
-        <Box sx={{ mt: 2, mb: 3 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-          >
-            Add New Content
-          </Button>
-        </Box>
-
-        <TabPanel value={tabValue} index={0}>
-          {contentItems.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 5 }}>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No content items found
-              </Typography>
-              <Typography variant="body1" color="textSecondary">
-                Click the "Add New Content" button to get started
-              </Typography>
-            </Box>
-          ) : (
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="content-items">
-                {(provided) => (
-                  <List 
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    sx={{ bgcolor: 'background.paper' }}
-                  >
-                    {contentItems.map((item, index) => (
-                      <Draggable key={item.$id} draggableId={item.$id} index={index}>
-                        {(provided, snapshot) => (
-                          <Card 
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            sx={{ 
-                              mb: 2, 
-                              transition: 'all 0.2s',
-                              boxShadow: snapshot.isDragging ? 4 : 1,
-                              bgcolor: snapshot.isDragging ? 'rgba(63, 81, 181, 0.08)' : 'background.paper'
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', p: 1, alignItems: 'center' }}>
-                              <Box 
-                                {...provided.dragHandleProps}
-                                sx={{ 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  cursor: 'grab', 
-                                  p: 1, 
-                                  color: 'text.secondary' 
-                                }}
-                              >
-                                <DragIndicatorIcon />
-                              </Box>
-                              
-                              <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                                {item.type === 'video' ? (
-                                  <VideoLibraryIcon color="primary" />
-                                ) : item.type === 'document' ? (
-                                  <ArticleIcon color="secondary" />
-                                ) : (
-                                  <LinkIcon color="info" />
-                                )}
-                              </Box>
-                              
-                              <Box 
-                                sx={{ flex: 1, ml: 2, cursor: 'pointer' }}
-                                onClick={() => handleExpandCard(item.$id)}
-                              >
-                                <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                                  {index + 1}. {item.title}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" noWrap>
-                                  {item.description}
-                                </Typography>
-                              </Box>
-                              
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleExpandCard(item.$id)}
-                                >
-                                  {expandedItems[item.$id] ? <ExpandMoreIcon /> : <ExpandMoreIcon sx={{ transform: 'rotate(-90deg)' }} />}
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  color="primary"
-                                  onClick={() => handleOpenDialog(item)}
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleDeleteContent(item.$id)}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Box>
+        {contentItems.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 5 }}>
+            <Typography variant="h6" color="textSecondary" gutterBottom>
+              No content items found
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Click the "Add New Video" button to get started
+            </Typography>
+          </Box>
+        ) : (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="content-items">
+              {(provided) => (
+                <List 
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  sx={{ bgcolor: 'background.paper' }}
+                >
+                  {contentItems.map((item, index) => (
+                    <Draggable key={item.$id} draggableId={item.$id} index={index}>
+                      {(provided, snapshot) => (
+                        <Card 
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          sx={{ 
+                            mb: 3, 
+                            transition: 'all 0.2s',
+                            borderRadius: '8px',
+                            boxShadow: snapshot.isDragging ? 4 : 1,
+                            bgcolor: snapshot.isDragging ? 'rgba(63, 81, 181, 0.08)' : 'background.paper',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', p: 2, alignItems: 'center' }}>
+                            <Box 
+                              {...provided.dragHandleProps}
+                              sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                cursor: 'grab', 
+                                p: 1, 
+                                color: 'text.secondary' 
+                              }}
+                            >
+                              <DragIndicatorIcon />
                             </Box>
                             
-                            {expandedItems[item.$id] && (
-                              <>
-                                <Divider />
-                                
-                                <Box sx={{ p: 2 }}>
-                                  <Grid container spacing={2}>
-                                    <Grid item xs={12} md={6}>
-                                      <Box sx={{ mb: 2 }}>
-                                        <Typography variant="body2" color="text.secondary">Type:</Typography>
-                                        <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>{item.type}</Typography>
-                                      </Box>
-                                      
-                                      {item.duration && (
-                                        <Box sx={{ mb: 2 }}>
-                                          <Typography variant="body2" color="text.secondary">Duration:</Typography>
-                                          <Typography variant="body1">{item.duration}</Typography>
-                                        </Box>
-                                      )}
-                                    </Grid>
-                                    
-                                    <Grid item xs={12} md={6}>
-                                      {item.fileUrl && item.type === 'video' && (
-                                        <Box sx={{ maxWidth: '100%' }}>
-                                          <video
-                                            controls
-                                            width="100%"
-                                            src={item.fileUrl}
-                                            style={{ maxHeight: '150px', objectFit: 'contain' }}
-                                          />
-                                        </Box>
-                                      )}
-                                      
-                                      {item.fileUrl && item.type === 'document' && (
-                                        <Button
-                                          variant="outlined"
-                                          startIcon={<DescriptionIcon />}
-                                          href={item.fileUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          View Document
-                                        </Button>
-                                      )}
-                                      
-                                      {item.fileUrl && item.type === 'link' && (
-                                        <Button
-                                          variant="outlined"
-                                          startIcon={<LinkIcon />}
-                                          href={item.fileUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          Open Link
-                                        </Button>
-                                      )}
-                                    </Grid>
-                                  </Grid>
-                                </Box>
-                              </>
-                            )}
-                          </Card>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </List>
-                )}
-              </Droppable>
-            </DragDropContext>
-          )}
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
-          <List>
-            {contentItems.filter(item => item.type === 'video').length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 5 }}>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  No video content found
-                </Typography>
-                <Typography variant="body1" color="textSecondary">
-                  Add videos to your course using the "Add New Content" button
-                </Typography>
-              </Box>
-            ) : (
-              contentItems
-                .filter(item => item.type === 'video')
-                .map((item, index) => (
-                  <Card key={item.$id} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', p: 1, alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                        <VideoLibraryIcon color="primary" />
-                      </Box>
-                      
-                      <Box 
-                        sx={{ flex: 1, ml: 2, cursor: 'pointer' }}
-                        onClick={() => handleExpandCard(item.$id)}
-                      >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                          {index + 1}. {item.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" noWrap>
-                          {item.description}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleExpandCard(item.$id)}
-                        >
-                          {expandedItems[item.$id] ? <ExpandMoreIcon /> : <ExpandMoreIcon sx={{ transform: 'rotate(-90deg)' }} />}
-                        </IconButton>
-                        <IconButton color="primary" onClick={() => handleOpenDialog(item)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDeleteContent(item.$id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                    
-                    {expandedItems[item.$id] && (
-                      <>
-                        <Divider />
-                        <CardContent>
-                          {item.duration && (
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                              Duration: {item.duration}
-                            </Typography>
-                          )}
-                          
-                          {item.fileUrl && (
-                            <Box sx={{ mt: 2, maxWidth: '100%' }}>
-                              <video
-                                controls
-                                width="100%"
-                                src={item.fileUrl}
-                                style={{ maxHeight: '200px', objectFit: 'contain' }}
-                              />
+                            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                              <VideoLibraryIcon color="primary" />
                             </Box>
-                          )}
-                        </CardContent>
-                      </>
-                    )}
-                  </Card>
-                ))
-            )}
-          </List>
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={2}>
-          <List>
-            {contentItems.filter(item => item.type === 'document').length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 5 }}>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  No document content found
-                </Typography>
-                <Typography variant="body1" color="textSecondary">
-                  Add documents to your course using the "Add New Content" button
-                </Typography>
-              </Box>
-            ) : (
-              contentItems
-                .filter(item => item.type === 'document')
-                .map((item, index) => (
-                  <Card key={item.$id} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', p: 1, alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                        <ArticleIcon color="secondary" />
-                      </Box>
-                      
-                      <Box 
-                        sx={{ flex: 1, ml: 2, cursor: 'pointer' }}
-                        onClick={() => handleExpandCard(item.$id)}
-                      >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                          {index + 1}. {item.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" noWrap>
-                          {item.description}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleExpandCard(item.$id)}
-                        >
-                          {expandedItems[item.$id] ? <ExpandMoreIcon /> : <ExpandMoreIcon sx={{ transform: 'rotate(-90deg)' }} />}
-                        </IconButton>
-                        <IconButton color="primary" onClick={() => handleOpenDialog(item)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDeleteContent(item.$id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                    
-                    {expandedItems[item.$id] && (
-                      <>
-                        <Divider />
-                        <CardContent>
-                          <Typography variant="body2" paragraph>
-                            {item.description}
-                          </Typography>
-                          
-                          {item.fileUrl && (
-                            <Button
-                              variant="outlined"
-                              startIcon={<DescriptionIcon />}
-                              href={item.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{ mt: 2 }}
+                            
+                            <Box 
+                              sx={{ flex: 1, ml: 2, cursor: 'pointer' }}
+                              onClick={() => handleExpandCard(item.$id)}
                             >
-                              View Document
-                            </Button>
-                          )}
-                        </CardContent>
-                      </>
-                    )}
-                  </Card>
-                ))
-            )}
-          </List>
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={3}>
-          <List>
-            {contentItems.filter(item => item.type === 'link').length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 5 }}>
-                <Typography variant="h6" color="textSecondary" gutterBottom>
-                  No link content found
-                </Typography>
-                <Typography variant="body1" color="textSecondary">
-                  Add links to your course using the "Add New Content" button
-                </Typography>
-              </Box>
-            ) : (
-              contentItems
-                .filter(item => item.type === 'link')
-                .map((item, index) => (
-                  <Card key={item.$id} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', p: 1, alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                        <LinkIcon color="info" />
-                      </Box>
-                      
-                      <Box 
-                        sx={{ flex: 1, ml: 2, cursor: 'pointer' }}
-                        onClick={() => handleExpandCard(item.$id)}
-                      >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                          {index + 1}. {item.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" noWrap>
-                          {item.description}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleExpandCard(item.$id)}
-                        >
-                          {expandedItems[item.$id] ? <ExpandMoreIcon /> : <ExpandMoreIcon sx={{ transform: 'rotate(-90deg)' }} />}
-                        </IconButton>
-                        <IconButton color="primary" onClick={() => handleOpenDialog(item)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDeleteContent(item.$id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                    
-                    {expandedItems[item.$id] && (
-                      <>
-                        <Divider />
-                        <CardContent>
-                          <Typography variant="body2" paragraph>
-                            {item.description}
-                          </Typography>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                                {index + 1}. {item.title}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" noWrap>
+                                {item.description}
+                              </Typography>
+                            </Box>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => handleOpenDialog(item)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleOpenDeleteDialog(item.$id)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleExpandCard(item.$id)}
+                              >
+                                {expandedItems[item.$id] ? 
+                                  <ExpandMoreIcon /> : 
+                                  <ExpandMoreIcon sx={{ transform: 'rotate(-90deg)' }} />
+                                }
+                              </IconButton>
+                            </Box>
+                          </Box>
                           
-                          {item.fileUrl && (
-                            <Button
-                              variant="outlined"
-                              startIcon={<LinkIcon />}
-                              href={item.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{ mt: 2 }}
-                            >
-                              Open Link
-                            </Button>
+                          {expandedItems[item.$id] && (
+                            <>
+                              <Divider />
+                              <Box sx={{ p: 2 }}>
+                                {item.fileUrl && item.type === 'video' && (
+                                  <Box sx={{ width: '100%' }}>
+                                    <video
+                                      controls
+                                      width="100%"
+                                      src={item.fileUrl}
+                                      style={{ borderRadius: '8px', maxHeight: '400px', objectFit: 'contain' }}
+                                    />
+                                  </Box>
+                                )}
+                                
+                                {item.fileUrl && item.type === 'document' && (
+                                  <Button
+                                    variant="outlined"
+                                    startIcon={<DescriptionIcon />}
+                                    href={item.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    View Document
+                                  </Button>
+                                )}
+                                
+                                {item.fileUrl && item.type === 'link' && (
+                                  <Button
+                                    variant="outlined"
+                                    startIcon={<LinkIcon />}
+                                    href={item.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Open Link
+                                  </Button>
+                                )}
+                              </Box>
+                            </>
                           )}
-                        </CardContent>
-                      </>
-                    )}
-                  </Card>
-                ))
-            )}
-          </List>
-        </TabPanel>
+                        </Card>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </List>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
       </Box>
 
       {/* Add/Edit Content Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{editingContentId ? 'Edit Content' : 'Add New Content'}</DialogTitle>
+        <DialogTitle>{editingContentId ? 'Edit Video' : 'Add New Video'}</DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <Grid container spacing={2}>
@@ -1004,24 +727,7 @@ const CourseContentManager = ({ courseId }) => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel id="content-type-label">Content Type</InputLabel>
-                  <Select
-                    labelId="content-type-label"
-                    name="type"
-                    value={formData.type}
-                    onChange={handleChange}
-                    label="Content Type"
-                  >
-                    <MenuItem value="video">Video</MenuItem>
-                    <MenuItem value="document">Document</MenuItem>
-                    <MenuItem value="link">External Link</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Duration (e.g., '10:30', '1 hour')"
@@ -1032,106 +738,57 @@ const CourseContentManager = ({ courseId }) => {
                 />
               </Grid>
 
-              {formData.type === 'link' ? (
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="URL"
-                    name="fileUrl"
-                    value={formData.fileUrl}
-                    onChange={handleChange}
-                    margin="normal"
-                    placeholder="https://example.com"
-                  />
-                </Grid>
-              ) : (
-                <Grid item xs={12}>
-                  <Box sx={{ mt: 2, mb: 2 }}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<CloudUploadIcon />}
-                      sx={{ mb: 2 }}
-                    >
-                      Upload {formData.type === 'video' ? 'Video' : 'Document'}
-                      <input
-                        type="file"
-                        accept={formData.type === 'video' ? 'video/*' : '*/*'}
-                        hidden
-                        onChange={handleFileChange}
+              <Grid item xs={12}>
+                <Box sx={{ mt: 2, mb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ mb: 2 }}
+                  >
+                    Upload Video
+                    <input
+                      type="file"
+                      accept="video/*"
+                      hidden
+                      onChange={handleFileChange}
+                    />
+                  </Button>
+
+                  {uploadProgress > 0 && uploadProgress < 100 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                      <CircularProgress variant="determinate" value={uploadProgress} size={24} sx={{ mr: 2 }} />
+                      <Typography variant="body2">{`Uploading: ${uploadProgress}%`}</Typography>
+                    </Box>
+                  )}
+
+                  {previewUrl && (
+                    <Box sx={{ mt: 2, maxWidth: '100%' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Preview:</Typography>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          startIcon={<DeleteIcon />}
+                          onClick={() => {
+                            setPreviewUrl('');
+                            setFormData(prev => ({ ...prev, fileUrl: '' }));
+                            setSelectedFile(null);
+                          }}
+                        >
+                          Remove Video
+                        </Button>
+                      </Box>
+                      <video
+                        controls
+                        width="100%"
+                        src={previewUrl}
+                        style={{ maxHeight: '200px', objectFit: 'contain' }}
                       />
-                    </Button>
-
-                    {uploadProgress > 0 && uploadProgress < 100 && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                        <CircularProgress variant="determinate" value={uploadProgress} size={24} sx={{ mr: 2 }} />
-                        <Typography variant="body2">{`Uploading: ${uploadProgress}%`}</Typography>
-                      </Box>
-                    )}
-
-                    {formData.type === 'video' && previewUrl && (
-                      <Box sx={{ mt: 2, maxWidth: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">Preview:</Typography>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            startIcon={<DeleteIcon />}
-                            onClick={() => {
-                              setPreviewUrl('');
-                              setFormData(prev => ({ ...prev, fileUrl: '' }));
-                              setSelectedFile(null);
-                            }}
-                          >
-                            Remove Video
-                          </Button>
-                        </Box>
-                        <video
-                          controls
-                          width="100%"
-                          src={previewUrl}
-                          style={{ maxHeight: '200px', objectFit: 'contain' }}
-                        />
-                      </Box>
-                    )}
-
-                    {formData.type !== 'video' && formData.type !== 'link' && formData.fileUrl && (
-                      <Box sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">
-                            Current file: {formData.fileUrl.split('/').pop()}
-                          </Typography>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            startIcon={<DeleteIcon />}
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, fileUrl: '' }));
-                              setSelectedFile(null);
-                            }}
-                          >
-                            Remove File
-                          </Button>
-                        </Box>
-                      </Box>
-                    )}
-                  </Box>
-                </Grid>
-              )}
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Sequence"
-                  name="sequence"
-                  type="number"
-                  value={formData.sequence}
-                  onChange={handleChange}
-                  margin="normal"
-                  helperText="Order in which this content appears"
-                />
+                    </Box>
+                  )}
+                </Box>
               </Grid>
             </Grid>
           </Box>
@@ -1146,6 +803,37 @@ const CourseContentManager = ({ courseId }) => {
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           >
             {loading ? 'Saving...' : 'Save Content'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="delete-dialog-description">
+            Are you sure you want to delete this video? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} color="primary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteContent} 
+            color="error" 
+            variant="contained"
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+            disabled={loading}
+          >
+            {loading ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

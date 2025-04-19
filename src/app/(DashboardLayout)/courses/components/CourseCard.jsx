@@ -103,20 +103,6 @@ const CourseCard = ({ course }) => {
         </Box>
       </CardContent>
       <Divider />
-      <Box px={2} py={1}>
-        <Link href={`/courses/content/${course.$id}`} passHref>
-          <Button 
-            variant="outlined" 
-            size="small" 
-            fullWidth
-            startIcon={<VideoLibraryIcon />}
-            sx={{ mb: 1 }}
-          >
-            Manage Content
-          </Button>
-        </Link>
-      </Box>
-      <Divider />
       <CardActions sx={{ justifyContent: 'space-between', padding: '8px 16px' }}>
         <Chip 
           label={course.status || 'Draft'} 
@@ -145,6 +131,20 @@ const CourseCard = ({ course }) => {
           </Tooltip>
         </Box>
       </CardActions>
+      <Divider />
+      <Box px={2} py={1}>
+        <Link href={`/courses/content/${course.$id}`} passHref>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            fullWidth
+            startIcon={<VideoLibraryIcon />}
+            sx={{ mb: 1 }}
+          >
+            Manage Content
+          </Button>
+        </Link>
+      </Box>
     </Card>
   );
 };
